@@ -6,7 +6,6 @@
 namespace uvcpp {
 
   auto LoopDeleter = [](uv_loop_t *p) {
-    uv_loop_close(p);
     uv_loop_delete(p);
   };
 
@@ -21,10 +20,15 @@ namespace uvcpp {
         uv_run(loop_.get(), UV_RUN_DEFAULT);
       }
 
+      uv_loop_t *getRaw() const {
+        return loop_.get();
+      }
+
     private:
       Loop() {
         loop_.reset(uv_default_loop());
       }
+
       ~Loop() = default;
     
     private:
