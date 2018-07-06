@@ -8,20 +8,13 @@
 #define UVCPP_TCP_H_
 #include "handle.hpp"
 #include "req.hpp"
+#include "util.hpp"
+#include "defs.h"
 
 namespace uvcpp {
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
       using BindCallback = std::function<void(Tcp *)>;
-
-      enum class IPVersion {
-        IPV4,
-        IPV6
-      };
-
-      using IPAddr = struct sockaddr;
-      using IPv4Addr = struct sockaddr_in;
-      using IPv6Addr = struct sockaddr_in6;
 
       virtual bool init() override {
         if (uv_tcp_init(Loop::get().getRaw(), get()) != 0) {
@@ -51,7 +44,7 @@ namespace uvcpp {
               host.c_str(),
               nullptr, 
               &hint)) != 0) {
-          LOG_E("uv_getaddrinfo failed: %s", uv_strerror(err));
+          this->reportError("uv_getaddrinfo", err);
         }
       }
 

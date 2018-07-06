@@ -7,33 +7,16 @@
 #ifndef UVCPP_REQ_H_
 #define UVCPP_REQ_H_
 #include <uv.h>
+#include "resource.hpp"
 
 namespace uvcpp {
 
-  template <typename T>
-  class Req {
-    public:
-      using Type = T;
+  template <typename T, typename Derived>
+  class Req : public Resource<T, Derived> { };
 
-      Req() = default;
-      virtual ~Req() = default;
-      Req &&operator=(const Req &) = delete;
-      Req &&operator=(const Req &&) = delete;
+  class GetAddressInfoReq : public Req<uv_getaddrinfo_t, GetAddressInfoReq> { };
 
-      Type *get() {
-        return &req_;
-      }
-
-      void setData(void *data) {
-        req_.data = data;
-      }
-
-    private:
-      Type req_;
-  };
-
-  class GetAddressInfoReq : public Req<uv_getaddrinfo_t> { };
-  class WriteReq : public Req<uv_write_t> { };
+  class WriteReq : public Req<uv_write_t, WriteReq> { };
 } /* end of namspace: uvcpp */
 
 #endif /* end of include guard: UVCPP_REQ_H_ */
