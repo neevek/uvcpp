@@ -6,7 +6,7 @@
 *******************************************************************************/
 #ifndef UVCPP_TCP_H_
 #define UVCPP_TCP_H_
-#include "handle.hpp"
+#include "stream.hpp"
 #include "req.hpp"
 #include "util.hpp"
 #include "defs.h"
@@ -28,24 +28,46 @@ namespace uvcpp {
         bindHost_ = host;
         bindPort_ = port;
         bindCallback_ = callback;
-        getAddrReq_.setData(this);
 
-        struct addrinfo hint;
-        memset(&hint, 0, sizeof(hint));
-        hint.ai_family = AF_UNSPEC;
-        hint.ai_socktype = SOCK_STREAM;
-        hint.ai_protocol = IPPROTO_TCP;
+        dnsReq_.resolve(host, [this](auto vec) {
+          for (auto &addr : *vec) {
+            auto sa = reinterpret_cast<SockAddr *>(addr.get());
+            if (sa->sa_family == AF_INET) {
+              this->ipVersion_ = IPVersion::IPV4;
+              reinterpret_cast<SockAddr4 *>(sa)->sin_port = htons(this->bindPort_);
 
-        int err;
-        if ((err = uv_getaddrinfo(
-              Loop::get().getRaw(),
-              getAddrReq_.get(),
-              getAddressInfoReqCallback,
-              host.c_str(),
-              nullptr, 
-              &hint)) != 0) {
-          this->reportError("uv_getaddrinfo", err);
-        }
+            } else if (sa->sa_family == AF_INET6) {
+              this->ipVersion_ = IPVersion::IPV6;
+              reinterpret_cast<SockAddr6 *>(sa)->sin6_port = htons(this->bindPort_);
+
+            } else {
+              LOG_W("unexpected address family: %d", sa->sa_family);
+              continue;
+            }
+
+            int err;
+            if ((err = uv_tcp_bind(this->get(), sa, 0)) != 0) {
+              LOG_W("cannot bind on %s:%d, reason: %s",
+                  NetUtil::extractIPAddress(addr.get()).c_str(),
+                  this->bindPort_, uv_strerror(err));
+              continue;
+            }
+
+          //if (!tcp->setuid_.empty()) {
+            //NetUtil::doSetUID(tcp->setuid_.c_str());
+          //}
+
+            LOG_I("server binds on %s:%d",
+                NetUtil::extractIPAddress(addr.get()).c_str(), this->bindPort_);
+            if (this->bindCallback_) {
+              this->bindCallback_(this);
+            }
+            return;
+          }
+
+          LOG_I("failed to bind on %s:%d",
+              this->bindHost_.c_str(), this->bindPort_);
+        });
       }
 
       void setKeepAlive(bool keepAlive) {
@@ -100,64 +122,7 @@ namespace uvcpp {
       }
 
     private:
-      bool doBind(IPAddr *addr, char *ipstr) {
-        int err;
-        if ((err = uv_tcp_bind(get(), addr, 0)) != 0) {
-          LOG_W("uv_tcp_bind on %s:%d failed: %s", ipstr, bindPort_, uv_strerror(err));
-          return false;
-        }
-
-        if (bindCallback_) {
-          bindCallback_(this);
-        }
-        return true;
-      }
-
-      static void getAddressInfoReqCallback(
-          uv_getaddrinfo_t* req, int status, struct addrinfo* res) {
-        auto tcp = reinterpret_cast<Tcp *>(req->data);
-        if (status < 0) {
-          LOG_E("getaddrinfo(\"%s\"): %s",
-              tcp->bindHost_.c_str(), uv_strerror(status));
-          uv_freeaddrinfo(res);
-          return;
-        }
-
-        struct sockaddr_storage addr;
-        char ipstr[INET6_ADDRSTRLEN];
-        for (struct addrinfo *ai = res; ai != nullptr; ai = ai->ai_next) {
-          if (NetUtil::fillIPAddress(reinterpret_cast<struct sockaddr *>(&addr),
-                htons(tcp->bindPort_), ipstr, sizeof(ipstr), ai) != 0) {
-            continue;
-          }
-
-          if (ai->ai_family == AF_INET) {
-            tcp->ipVersion_ = IPVersion::IPV4;
-          } else if (ai->ai_family == AF_INET6) {
-            tcp->ipVersion_ = IPVersion::IPV6;
-          } else {
-            LOG_W("unexpected address family: %d", ai->ai_family);
-            continue;
-          }
-
-          if (!tcp->doBind(reinterpret_cast<IPAddr *>(&addr), ipstr)) {
-            continue;
-          }
-
-          LOG_I("server bound on%s:%d", ipstr, tcp->bindPort_);
-          uv_freeaddrinfo(res);
-
-          //if (!tcp->setuid_.empty()) {
-            //NetUtil::doSetUID(tcp->setuid_.c_str());
-          //}
-          return;
-        }
-
-        LOG_E("failed to bind on port: %d", tcp->bindPort_);
-      }
-
-    private:
-      GetAddressInfoReq getAddrReq_;
+      DNSRequest dnsReq_;
       std::string bindHost_;
       uint16_t bindPort_{0};
       IPVersion ipVersion_{IPVersion::IPV4};

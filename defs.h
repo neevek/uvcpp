@@ -7,6 +7,7 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 #include <memory>
+#include <cstdlib>
 #include <uv.h>
 
 namespace uvcpp {
@@ -19,9 +20,10 @@ namespace uvcpp {
     IPV6
   };
 
-  using IPAddr = struct sockaddr;
-  using IPv4Addr = struct sockaddr_in;
-  using IPv6Addr = struct sockaddr_in6;
+  using SockAddr = struct sockaddr;
+  using SockAddrStorage = struct sockaddr_storage;
+  using SockAddr4 = struct sockaddr_in;
+  using SockAddr6 = struct sockaddr_in6;
 
 } /* end of namspace: uvcpp */
 

@@ -6,15 +6,27 @@
 *******************************************************************************/
 #ifndef UVCPP_UTIL_H_
 #define UVCPP_UTIL_H_
+#include <cstdlib>
+#include <cerrno>
+#include <memory>
+#include <string>
 #include <netdb.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <pwd.h>
 #include <uv.h>
 #include "log/log.h"
 
 namespace uvcpp {
+  static const auto CPointerDeleter = [](void *p) { free(p); };
+
+  class Util {
+    public:
+      template <typename T>
+      static auto makeCStructUniquePtr() {
+        return std::unique_ptr<T, decltype(CPointerDeleter)>(
+            reinterpret_cast<T *>(malloc(sizeof(T))), CPointerDeleter);
+      }
+  };
 
   class NetUtil {
     public:
@@ -42,6 +54,7 @@ namespace uvcpp {
           uv_inet_ntop(addr6->sin6_family, &addr6->sin6_addr, ipstr, sizeof(ipstr));
           return ipstr;
         }
+        LOG_W("cannot extract ip address");
 
         return "";
       }
@@ -67,6 +80,19 @@ namespace uvcpp {
         }
 
         return 0;
+      }
+
+      static void copyIPAddress(struct sockaddr_storage *addr, struct addrinfo *ai) {
+        memset(addr, 0, sizeof(struct sockaddr_storage));
+        if (ai->ai_family == AF_INET) {
+          memcpy(addr, ai->ai_addr, sizeof(struct sockaddr_in));
+
+        } else if (ai->ai_family == AF_INET6) {
+          memcpy(addr, ai->ai_addr, sizeof(struct sockaddr_in6));
+
+        } else {
+          LOG_W("unexpected ai_family: %d", ai->ai_family);
+        }
       }
 
       static void copy_ipv4_addr(uint32_t *intip, const char *ip) {

@@ -23,8 +23,8 @@ int main(int argc, const char *argv[]) {
       //c = std::move(client);
     //});
 
-    server->bind("0.0.0.0", 9000, [&c](auto server){
-        server->listen(50, [&c](auto client){
+    server->bind("0.0.0.0", 9000, [&c, &server](auto s){
+        s->listen(50, [&c](auto client){
             Buffer buf = { .base = (char *)"hello world", .len = 11 };
             while (client->write(buf) < 0) {}
 
