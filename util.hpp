@@ -1,5 +1,11 @@
-#ifndef UTIL_H_
-#define UTIL_H_
+/*******************************************************************************
+**          File: util.hpp
+**        Author: neevek <i@neevek.net>.
+** Creation Time: 2018-07-06 Fri 03:18 PM
+**   Description: utility functions
+*******************************************************************************/
+#ifndef UVCPP_UTIL_H_
+#define UVCPP_UTIL_H_
 #include <netdb.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -138,4 +144,4 @@ namespace uvcpp {
 
 } /* end of namspace: uvcpp */
 
-#endif /* end of include guard: UTIL_H_ */
+#endif /* end of include guard: UVCPP_UTIL_H_ */

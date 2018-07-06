@@ -1,0 +1,13 @@
+/*******************************************************************************
+**          File: uvcpp.h
+**        Author: neevek <i@neevek.net>.
+** Creation Time: 2018-07-06 Fri 03:13 PM
+**   Description: include all uvcpp headers 
+*******************************************************************************/
+#ifndef UVCPP_H_
+#define UVCPP_H_
+
+#include "stream.hpp"
+#include "tcp.hpp"
+
+#endif /* end of include guard: UVCPP_H_ */

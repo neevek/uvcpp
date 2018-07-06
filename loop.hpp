@@ -1,5 +1,11 @@
-#ifndef LOOP_H_
-#define LOOP_H_
+/*******************************************************************************
+**          File: loop.hpp
+**        Author: neevek <i@neevek.net>.
+** Creation Time: 2018-07-06 Fri 03:18 PM
+**   Description: wraps uv_loop_t 
+*******************************************************************************/
+#ifndef UVCPP_LOOP_H_
+#define UVCPP_LOOP_H_
 #include <uv.h>
 #include <memory> 
 
@@ -37,4 +43,4 @@ namespace uvcpp {
   };
 } /* end of namspace: uvcpp */
 
-#endif /* end of include guard: LOOP_H_ */
+#endif /* end of include guard: UVCPP_LOOP_H_ */

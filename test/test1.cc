@@ -1,5 +1,4 @@
-#include "loop.hpp"
-#include "handle.hpp"
+#include "uvcpp.h"
 #include <string>
 #include <exception>
 #include <thread>
@@ -12,8 +11,8 @@ using namespace std::chrono_literals;
 
 int main(int argc, const char *argv[]) {
   try {
-    //std::shared_ptr<Stream> c = Tcp::create<ServerTcp>();
-    auto server = Tcp::create<ServerTcp>();
+    std::shared_ptr<Tcp> c;
+    auto server = Tcp::create();
     server->init();
     //server->onAccept([&c](auto client){
       //client->onRead([](const char *buf, ssize_t nread){
@@ -24,15 +23,14 @@ int main(int argc, const char *argv[]) {
       //c = std::move(client);
     //});
 
-    server->bind("0.0.0.0", 9000, [](auto server){
-        server->listen(50, [](auto client){
+    server->bind("0.0.0.0", 9000, [&c](auto server){
+        server->listen(50, [&c](auto client){
             client->read();
-            //client->onRead([](const char *buf, ssize_t nread){
-              //((char *)buf)[nread] = '\0';
-              //LOG_D(">>> read: %s", buf);
-            //});
-            //c.reset();
-      //c = std::move(client);
+            client->onRead([](const char *buf, ssize_t nread){
+              ((char *)buf)[nread] = '\0';
+              LOG_D(">>> read: %s", buf);
+            });
+      c = std::move(client);
             });
         });
     Loop::get().run();
