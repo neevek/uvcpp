@@ -16,9 +16,6 @@
 
 namespace uvcpp {
 
-  auto ByteArrayDeleter = [](unsigned char *p) { delete [] p; };
-  using ByteArray = std::unique_ptr<unsigned char, decltype(ByteArrayDeleter)>;
-
   class NetUtil {
     public:
       static void log_ipv4_and_port(void *ipv4, int port, const char *msg) {

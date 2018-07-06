@@ -7,6 +7,8 @@
 #ifndef UVCPP_STREAM_H_
 #define UVCPP_STREAM_H_
 #include "handle.hpp"
+#include "req.hpp"
+#include "defs.h"
 
 namespace uvcpp {
 
@@ -16,52 +18,76 @@ namespace uvcpp {
       template <typename U>
       using AcceptCallback = std::function<void(std::unique_ptr<Derived>)>;
       using ReadCallback = std::function<void(const char *buf, ssize_t nread)>;
-      using ErrorCallback = std::function<void(int err)>;
+      using WriteCallback = std::function<void(int status)>;
       const static auto BUF_SIZE = 4096; 
 
-      void onRead(ReadCallback reader) {
-        readCallback = reader;
+      void onRead(ReadCallback callback) {
+        readCallback_ = callback;
       }
 
-      void listen(int backlog, AcceptCallback<Derived> acceptCallback) {
-        acceptCallback_ = acceptCallback;
+      void listen(int backlog, AcceptCallback<Derived> callback) {
+        acceptCallback_ = callback;
         int err;
         if ((err = uv_listen(reinterpret_cast<uv_stream_t *>(this->get()),
                 backlog, onConnectCallback)) != 0) {
-          LOG_W("uv_listen failed: %s", uv_strerror(err));
+          this->reportError("uv_listen", err);
         }
       }
 
-      int read() {
+      void readStart() {
         int err;
         if ((err = uv_read_start(
                 reinterpret_cast<uv_stream_t *>(this->get()),
                 onAllocCallback, onReadCallback)) != 0) {
-          LOG_E("uv_read_start failed: %s", uv_strerror(err));
-          if (!errorCallback_) {
-            errorCallback_(err);
-          }
+          this->reportError("uv_read_start", err);
+        }
+      }
+
+      void readStop() {
+        int err;
+        if ((err = uv_read_stop(reinterpret_cast<uv_stream_t *>(this->get()))) != 0) {
+          this->reportError("uv_read_stop", err);
+        }
+      }
+
+      int write(const Buffer buf) {
+        return write(&buf, 1);
+      }
+
+      /**
+       * > 0: number of bytes written (can be less than the supplied buffer size).
+       * < 0: negative error code (UV_EAGAIN is returned if no data can be sent immediately).
+       */
+      int write(const Buffer bufs[], unsigned int nBufs) {
+        //uv_buf_t buf = { .base = const_cast<char *>(data), .len = len };
+        int err;
+        if ((err = uv_try_write(
+            reinterpret_cast<uv_stream_t *>(this->get()), bufs, nBufs)) < 0) {
+          this->reportError("uv_try_write", err);
         }
         return err;
       }
 
     protected:
-      virtual void doAccept(AcceptCallback<Derived> acceptCallback) = 0;
+      virtual void doAccept(AcceptCallback<Derived> callback) = 0;
 
-    private:
       static void onAllocCallback(
           uv_handle_t *handle, size_t size, uv_buf_t *buf) {
         auto st = reinterpret_cast<Stream *>(handle->data);
-        buf->base = reinterpret_cast<char *>(st->buf_.get());
-        buf->len = BUF_SIZE;
+        buf->base = st->readBuf_;
+        buf->len = sizeof(st->readBuf_);
       }
 
       static void onReadCallback(
           uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf) {
         auto st = reinterpret_cast<Stream *>(handle->data);
-        if (st->readCallback) {
-          st->readCallback(buf->base, nread);
+        if (st->readCallback_) {
+          st->readCallback_(buf->base, nread);
         }
+      }
+
+      static void onWriteCallback(uv_write_t *req, int status) {
+        auto st = reinterpret_cast<Stream *>(req->data);
       }
 
       static void onConnectCallback(uv_stream_t* stream, int status) {
@@ -76,9 +102,9 @@ namespace uvcpp {
 
     private:
       AcceptCallback<Derived> acceptCallback_{nullptr};
-      ReadCallback readCallback{nullptr};
-      ErrorCallback errorCallback_{nullptr};
-      ByteArray buf_{new unsigned char[BUF_SIZE], ByteArrayDeleter};
+      ReadCallback readCallback_{nullptr};
+      WriteCallback writeCallback_{nullptr};
+      char readBuf_[BUF_SIZE];
   };
   
 } /* end of namspace: uvcpp */

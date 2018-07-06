@@ -19,6 +19,7 @@ namespace uvcpp {
   class Handle {
     public:
       using Type = T;
+      using ErrorCallback = std::function<void(int err)>;
 
       explicit Handle() {
         handle_.data = this;
@@ -39,11 +40,23 @@ namespace uvcpp {
         return &handle_;
       }
 
+      void onError(ErrorCallback callback) {
+        errorCallback_ = callback; 
+      }
+
       static auto create() {
         using HandleType = 
           typename std::enable_if_t<
           std::is_base_of<Handle<typename Derived::Type, Derived>, Derived>::value, Derived>;
         return std::make_unique<HandleType>();
+      }
+
+    protected:
+      void reportError(const char *funName, int err) {
+        LOG_E("%s failed: %s", funName, uv_strerror(err));
+        if (errorCallback_) {
+          errorCallback_(err);
+        }
       }
 
     private:
@@ -53,6 +66,7 @@ namespace uvcpp {
     
     private:
       Type handle_;
+      ErrorCallback errorCallback_{nullptr};
   };
 
 } /* end of namspace: uvcpp */

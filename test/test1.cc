@@ -25,7 +25,10 @@ int main(int argc, const char *argv[]) {
 
     server->bind("0.0.0.0", 9000, [&c](auto server){
         server->listen(50, [&c](auto client){
-            client->read();
+            Buffer buf = { .base = (char *)"hello world", .len = 11 };
+            while (client->write(buf) < 0) {}
+
+            client->readStart();
             client->onRead([](const char *buf, ssize_t nread){
               ((char *)buf)[nread] = '\0';
               LOG_D(">>> read: %s", buf);

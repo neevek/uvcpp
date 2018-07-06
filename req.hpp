@@ -33,6 +33,7 @@ namespace uvcpp {
   };
 
   class GetAddressInfoReq : public Req<uv_getaddrinfo_t> { };
+  class WriteReq : public Req<uv_write_t> { };
 } /* end of namspace: uvcpp */
 
 #endif /* end of include guard: UVCPP_REQ_H_ */

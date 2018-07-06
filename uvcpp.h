@@ -7,6 +7,7 @@
 #ifndef UVCPP_H_
 #define UVCPP_H_
 
+#include "defs.h"
 #include "stream.hpp"
 #include "tcp.hpp"
 
