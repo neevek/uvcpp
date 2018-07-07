@@ -12,7 +12,7 @@ namespace uvcpp {
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
     public:
-      virtual bool init() = 0;
+      using CloseCallback = std::function<void(Handle *)>;
 
       void close() {
         if (!uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get()))) {
@@ -20,10 +20,30 @@ namespace uvcpp {
         }
       }
 
-    private:
-      static void closeCallback(uv_handle_t *handle) {
-        LOG_D("close");
+      void onClose(CloseCallback callback) {
+        closeCallback_ = callback;
       }
+
+      static auto create() {
+        using HandleType = 
+          typename std::enable_if_t<
+          std::is_base_of<Handle<typename Derived::Type, Derived>, Derived>::value, Derived>;
+        auto handle = std::make_unique<HandleType>();
+        return handle->init() ? std::move(handle) : nullptr;
+      }
+
+      virtual bool init() = 0;
+
+    private:
+      static void closeCallback(uv_handle_t *h) {
+        auto handle = reinterpret_cast<Handle *>(h);
+        if (handle->closeCallback_) {
+          handle->closeCallback_(handle);
+        }
+      }
+
+    private:
+      CloseCallback closeCallback_;
   };
 
 } /* end of namspace: uvcpp */

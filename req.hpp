@@ -14,11 +14,12 @@
 #include "defs.h"
 
 namespace uvcpp {
-
   template <typename T, typename Derived>
   class Req : public Resource<T, Derived> { };
 
   class WriteReq : public Req<uv_write_t, WriteReq> { };
+
+  class ConnectReq : public Req<uv_connect_t, ConnectReq> { };
 
   class DNSRequest : public Req<uv_getaddrinfo_t, DNSRequest> {
     public:

@@ -42,14 +42,14 @@ namespace uvcpp {
         LOG_V("%s: [%s]:%d", msg, data, port);
       }
 
-      static std::string extractIPAddress(struct sockaddr_storage *addr) {
+      static std::string extractIPAddress(struct sockaddr *addr) {
         char ipstr[INET6_ADDRSTRLEN];
-        if (addr->ss_family == AF_INET) {
+        if (addr->sa_family == AF_INET) {
           struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
           uv_inet_ntop(addr4->sin_family, &addr4->sin_addr, ipstr, sizeof(ipstr));
           return ipstr;
 
-        } else if (addr->ss_family == AF_INET6) {
+        } else if (addr->sa_family == AF_INET6) {
           struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
           uv_inet_ntop(addr6->sin6_family, &addr6->sin6_addr, ipstr, sizeof(ipstr));
           return ipstr;

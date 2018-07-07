@@ -11,6 +11,8 @@
 #include <uv.h>
 
 namespace uvcpp {
+  #define STRINGIFY(s) #s
+
   auto ByteArrayDeleter = [](unsigned char *p) { delete [] p; };
   using ByteArray = std::unique_ptr<unsigned char, decltype(ByteArrayDeleter)>;
   using Buffer = uv_buf_t;
