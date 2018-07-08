@@ -18,7 +18,6 @@ namespace uvcpp {
       template <typename U>
       using AcceptCallback = std::function<void(std::unique_ptr<Derived>)>;
       using ReadCallback = std::function<void(const char *buf, ssize_t nread)>;
-      using WriteCallback = std::function<void(int status)>;
       const static auto BUF_SIZE = 4096; 
 
       void onRead(ReadCallback callback) {
@@ -86,24 +85,19 @@ namespace uvcpp {
         }
       }
 
-      static void onWriteCallback(uv_write_t *req, int status) {
-        auto st = reinterpret_cast<Stream *>(req->data);
-      }
-
       static void onConnectCallback(uv_stream_t* stream, int status) {
-        if (status < 0) {
-          LOG_E("uv_listen failed: %s", uv_strerror(status));
-          return;
-        }
-
         auto st = reinterpret_cast<Stream *>(stream->data);
-        st->doAccept(st->acceptCallback_);
+
+        if (status < 0) {
+          st->reportError("connect", status);
+        } else {
+          st->doAccept(st->acceptCallback_);
+        }
       }
 
     private:
       AcceptCallback<Derived> acceptCallback_{nullptr};
       ReadCallback readCallback_{nullptr};
-      WriteCallback writeCallback_{nullptr};
       char readBuf_[BUF_SIZE];
   };
   

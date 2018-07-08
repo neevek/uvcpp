@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <uv.h>
+#include "defs.h"
 #include "log/log.h"
 
 namespace uvcpp {
@@ -25,6 +26,16 @@ namespace uvcpp {
       static auto makeCStructUniquePtr() {
         return std::unique_ptr<T, decltype(CPointerDeleter)>(
             reinterpret_cast<T *>(malloc(sizeof(T))), CPointerDeleter);
+      }
+
+      static size_t charCount(const std::string &s, char c) {
+        size_t count = 0;
+        for (int i = 0; i < s.size(); ++i) {
+          if (s[i] == c) {
+            ++count;
+          }
+        }
+        return count;
       }
   };
 
@@ -42,7 +53,16 @@ namespace uvcpp {
         LOG_V("%s: [%s]:%d", msg, data, port);
       }
 
-      static std::string extractIPAddress(struct sockaddr *addr) {
+      static bool convertIPAddress(
+          const std::string &host, uint16_t port, SockAddrStorage *sas) {
+        return
+          uv_ip4_addr(host.c_str(), port,
+              reinterpret_cast<SockAddr4 *>(sas)) == 0 ||
+          uv_ip6_addr(host.c_str(), port,
+              reinterpret_cast<SockAddr6 *>(sas)) == 0;
+      }
+
+      static std::string ip(struct sockaddr *addr) {
         char ipstr[INET6_ADDRSTRLEN];
         if (addr->sa_family == AF_INET) {
           struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
@@ -57,6 +77,10 @@ namespace uvcpp {
         LOG_W("cannot extract ip address");
 
         return "";
+      }
+
+      static uint16_t port(struct sockaddr *addr) {
+        return ntohs(reinterpret_cast<sockaddr_in *>(addr)->sin_port);
       }
 
       static int fillIPAddress(
@@ -109,7 +133,7 @@ namespace uvcpp {
 
       static int is_ipv6_addr_any(const char *ip) {
         for (int i = 0; i < 16; ++i) {
-          if (ip[i] != 0) {
+          if (ip[i] != 0) { 
             return 0;
           }
         }

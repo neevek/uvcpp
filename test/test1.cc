@@ -41,25 +41,26 @@ void test2() {
   auto cc = Tcp::create();
 
   server->bind("0.0.0.0", 9000, [&](auto s){
-      s->listen(50, [&c](auto client){
-          Buffer buf = { .base = (char *)"hello world", .len = 11 };
-          while (client->write(buf) < 0) {}
+    s->listen(50, [&c](auto client) {
+      Buffer buf = { .base = (char *)"hello world", .len = 11 };
+      while (client->write(buf) < 0) {}
 
-          client->readStart();
-          client->onRead([](const char *buf, ssize_t nread){
-              ((char *)buf)[nread] = '\0';
-              LOG_D(">>> read: %s", buf);
-              });
-          c = std::move(client);
+      client->readStart();
+      client->onRead([](const char *buf, ssize_t nread){
+          ((char *)buf)[nread] = '\0';
+          LOG_D(">>> read: %s", buf);
           });
+      c = std::move(client);
+    });
 
-      if (cc) {
-        cc->connect("0.0.0.0", 9000, [](auto c){
-          Buffer buf = { .base = (char *)"SOMETHING", .len = 9 };
-          while (c->write(buf) < 0) {}
-        });
-      }
+    if (cc) {
+      cc->connect("127.0.0.1", 9000, [](auto c){
+        const char *msg = "message from client";
+        Buffer buf = { .base = (char *)msg, .len = strlen(msg) };
+        while (c->write(buf) < 0) {}
       });
+    }
+  });
   Loop::get().run();
 
   //std::this_thread::sleep_for(10s);

@@ -25,22 +25,22 @@ namespace uvcpp {
         return true;
       }
 
-      bool bind(SockAddr *sa, uint16_t port, BindCallback callback) {
+      bool bind(SockAddr *sa, BindCallback callback) {
         if (sa->sa_family == AF_INET || sa->sa_family == AF_INET6) {
-          // the port starts from sa_data
-          *reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
+          //// the port starts from sa_data
+          //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
+
+          memcpy(&sds_, sa, sa->sa_family == AF_INET ?
+              sizeof(SockAddr4) : sizeof(SockAddr6));
 
           int err;
           if ((err = uv_tcp_bind(get(), sa, 0)) != 0) {
             LOG_W("cannot bind on %s:%d, reason: %s",
-                NetUtil::extractIPAddress(sa).c_str(), port, uv_strerror(err));
+                getIP().c_str(), getPort(), uv_strerror(err));
             return false;
           }
 
-          bindHost_ = NetUtil::extractIPAddress(sa);
-          bindPort_ = port;
-
-          LOG_I("server binds on %s:%d", bindHost_.c_str(), port);
+          LOG_V("server binds on: %s:%d", getIP().c_str(), getPort());
           if (bindCallback_) {
             bindCallback_(this);
           }
@@ -61,12 +61,19 @@ namespace uvcpp {
       void bind(const std::string &host, uint16_t port, BindCallback callback) {
         bindCallback_ = callback;
 
+        SockAddrStorage sas;
+        if (NetUtil::convertIPAddress(host, port, &sas)) {
+          LOG_D("host is IP address: %s", host.c_str());
+          bind(reinterpret_cast<SockAddr *>(&sas), callback);
+          return;
+        }
+
         if (!dnsReq_) {
           dnsReq_ = std::make_unique<DNSRequest>();
         }
         dnsReq_->resolve(host, [this, host, port](auto vec) {
           for (auto &addr : *vec) {
-            if (!this->bind(reinterpret_cast<SockAddr *>(addr.get()), port, nullptr)) {
+            if (!this->bind(reinterpret_cast<SockAddr *>(addr.get()), nullptr)) {
               continue;
             }
             return;
@@ -75,16 +82,15 @@ namespace uvcpp {
         });
       }
 
-      bool connect(SockAddr *sa, uint16_t port, ConnectCallback callback) {
-        if (callback) {
-          connectCallback_ = callback;
-        }
+      bool connect(SockAddr *sa, ConnectCallback callback) {
+        connectCallback_ = callback;
+
         if (!connectReq_) {
           connectReq_ = std::make_unique<ConnectReq>();
         }
 
-        // the port starts from sa_data
-        *reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
+        //// the port starts from sa_data
+        //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
         connectReq_->setData(this);
 
         int err;
@@ -96,19 +102,14 @@ namespace uvcpp {
       }
 
       void connect(const std::string &host, uint16_t port, ConnectCallback callback) {
-        connectCallback_ = callback;
-        if (!dnsReq_) {
-          dnsReq_ = std::make_unique<DNSRequest>();
+        SockAddrStorage sas;
+        if (NetUtil::convertIPAddress(host, port, &sas)) {
+          LOG_D("host is IP address: %s", host.c_str());
+          connect(reinterpret_cast<SockAddr *>(&sas), callback);
+
+        } else {
+          LOG_E("failed to convert IP address: %s", host.c_str());
         }
-        dnsReq_->resolve(host, [this, host, port](auto vec) {
-          for (auto &addr : *vec) {
-            if (!this->connect(reinterpret_cast<SockAddr *>(addr.get()), port, nullptr)) {
-              continue;
-            }
-            return;
-          }
-          LOG_W("failed to connect to %s:%d", host.c_str(), port);
-        });
       }
 
       void setKeepAlive(bool enable) {
@@ -138,6 +139,14 @@ namespace uvcpp {
         }
       }
 
+      std::string getIP() {
+        return NetUtil::ip(reinterpret_cast<SockAddr *>(&sds_));
+      }
+
+      uint16_t getPort() {
+        return NetUtil::port(reinterpret_cast<SockAddr *>(&sds_));
+      }
+
     protected:
       virtual void doAccept(AcceptCallback<Tcp> acceptCallback) override {
         auto client = Tcp::create();
@@ -152,19 +161,14 @@ namespace uvcpp {
           return;
         }
 
-        struct sockaddr_storage addr;
-        int len = sizeof(addr);
+        int len = sizeof(client->sds_);
         if ((err = uv_tcp_getpeername(client->get(),
-                reinterpret_cast<sockaddr *>(&addr), &len)) != 0) {
+                reinterpret_cast<SockAddr *>(&client->sds_), &len)) != 0) {
           LOG_E("uv_tcp_getpeername failed: %s", uv_strerror(err));
           return;
         }
 
-        client->bindHost_ = NetUtil::extractIPAddress(reinterpret_cast<SockAddr *>(&addr));
-        client->bindPort_ = reinterpret_cast<sockaddr_in *>(&addr)->sin_port;
-
-        LOG_V("from client: %s:%d", client->bindHost_.c_str(), client->bindPort_);
-
+        LOG_V("from client: %s:%d", client->getIP().c_str(), client->getPort());
         if (acceptCallback) {
           acceptCallback(std::move(client));
         }
@@ -188,8 +192,7 @@ namespace uvcpp {
       std::unique_ptr<ConnectReq> connectReq_{nullptr};
       BindCallback bindCallback_{nullptr};
       ConnectCallback connectCallback_{nullptr};
-      std::string bindHost_;
-      uint16_t bindPort_{0};
+      SockAddrStorage sds_;
 
       std::string setuid_;
   };
