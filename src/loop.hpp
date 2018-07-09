@@ -30,6 +30,10 @@ namespace uvcpp {
         return loop_.get();
       }
 
+      void stop() const {
+        uv_stop(loop_.get());
+      }
+
     private:
       Loop() {
         loop_.reset(uv_default_loop());

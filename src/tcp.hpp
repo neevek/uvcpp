@@ -40,7 +40,7 @@ namespace uvcpp {
             return false;
           }
 
-          LOG_V("server binds on: %s:%d", getIP().c_str(), getPort());
+          LOG_D("server binds on: %s:%d", getIP().c_str(), getPort());
           if (bindCallback_) {
             bindCallback_(this);
           }
@@ -98,6 +98,7 @@ namespace uvcpp {
           this->reportError("uv_tcp_connect", err);
           return false;
         }
+        LOG_E(">>>>>>>>>>>> handletype: %d", get()->type);
         return true;
       }
 

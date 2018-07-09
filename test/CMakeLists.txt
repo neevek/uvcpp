@@ -52,4 +52,5 @@ macro(ADD_UVCPP_TEST TEST_NAME TEST_SOURCE)
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endmacro()
 
-ADD_UVCPP_TEST(test1 uvcpp/test1.cc)
+ADD_UVCPP_TEST(req uvcpp/req.cc)
+ADD_UVCPP_TEST(tcp uvcpp/tcp.cc)
