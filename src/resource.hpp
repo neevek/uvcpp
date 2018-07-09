@@ -11,15 +11,33 @@
 #include <string>
 #include <type_traits>
 #include <functional>
+#include <vector>
 #include "loop.hpp"
 #include "log/log.h"
 
 namespace uvcpp {
+
+  struct Event { };
+  struct EError : public Event {
+    EError(int status) : status(status) { }
+    int status;
+  };
+
+  template <typename E, typename Derived>
+  using EventCallback = std::function<void(E event, Derived &handle)>;
+
+  struct CallbackInterface { };
+
+  template <typename E, typename Derived>
+  struct Callback : public CallbackInterface {
+    Callback(EventCallback<E, Derived> callback) : callback(callback) { }
+    EventCallback<E, Derived> callback;
+  };
+
   template <typename T, typename Derived>
   class Resource {
     public:
       using Type = T;
-      using ErrorCallback = std::function<void(int err)>;
 
       explicit Resource() {
         setData(this);
@@ -36,8 +54,26 @@ namespace uvcpp {
         resource_.data = data;
       }
 
-      void onError(ErrorCallback callback) {
-        errorCallback_ = callback; 
+      template<typename E>
+      void on(EventCallback<E, Derived> &&callback) {
+        auto index = getEventTypeIndex<E>();
+        if (index >= callbacks_.size()) {
+          callbacks_.resize(index + 1);
+        }
+        callbacks_[index] = std::make_unique<Callback<E, Derived>>(
+            std::forward<EventCallback<E, Derived>>(callback));
+      }
+
+      template<typename E>
+      void publish(E &&event) {
+        auto index = getEventTypeIndex<E>();
+        if (index < callbacks_.size()) {
+          auto &callback = callbacks_[index];
+          if (callback) {
+            static_cast<Callback<E, Derived> *>(callback.get())
+              ->callback(std::forward<E>(event), static_cast<Derived &>(*this));
+          }
+        }
       }
 
       static auto create() {
@@ -50,14 +86,24 @@ namespace uvcpp {
     protected:
       void reportError(const char *funName, int err) {
         LOG_E("%s failed: %s", funName, uv_strerror(err));
-        if (errorCallback_) {
-          errorCallback_(err);
-        }
+        publish<EError>(EError{ err });
+      }
+
+    private:
+      static std::size_t countEventTypeIndex() {
+        static std::size_t index = 0;
+        return index++;
+      }
+
+      template <typename>
+      static std::size_t getEventTypeIndex() {
+        static std::size_t index = countEventTypeIndex();
+        return index;
       }
     
     private:
       Type resource_;
-      ErrorCallback errorCallback_{nullptr};
+      std::vector<std::unique_ptr<CallbackInterface>> callbacks_{};
   };
 } /* end of namspace: uvcpp */
 

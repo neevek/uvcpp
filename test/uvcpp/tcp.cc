@@ -10,17 +10,14 @@ TEST(Tcp, Connection) {
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
-  server->onError([](int status){
-    FAIL() << "server failed with status: " << status;
+  server->on<EError>([](auto e, auto &tcp) {
+    FAIL() << "server failed with status: " << e.status;
   });
-  server->onClose([](auto &handle) {
-    LOG_D("server handle closed");
+  client->on<EError>([](auto e, auto &tcp) {
+    FAIL() << "client failed with status: " << e.status;
   });
-  client->onError([](int status){
-    FAIL() << "client failed with status: " << status;
-  });
-  client->onClose([](auto &handle) {
-    LOG_D("client handle closed");
+  client->on<EClose>([](auto e, auto &handle) {
+    LOG_E("client closed!!!");
   });
 
   auto serverMsg = std::string{"greet from server!"};
@@ -28,41 +25,44 @@ TEST(Tcp, Connection) {
 
   std::shared_ptr<Tcp> acceptedClient;
 
-  server->onBind([&client](auto &server) {
+  server->on<EBind>([&client](auto e, auto &server) {
     server.listen(50);
     client->connect("127.0.0.1", 9000);
   });
 
-  server->onAccept([&](auto c) {
+  server->on<EAccept<Tcp>>([&](auto e, auto &server) {
     Buffer buf = {
       .base = (char *)serverMsg.c_str(), .len = serverMsg.size()
     };
-    while (c->write(buf) < 0) { }
+    while (e.client->write(buf) < 0) { }
 
-    c->readStart();
-    c->onRead([&](const char *buf, ssize_t nread){
-      ((char *)buf)[nread] = '\0';
-      ASSERT_STREQ(clientMsg.c_str(), buf);
+    e.client->readStart();
+    e.client->template on<ERead>([&](auto e, auto &client) {
+      ((char *)e.buf)[e.nread] = '\0';
+      ASSERT_STREQ(clientMsg.c_str(), e.buf);
+
+      LOG_D("server received: %s", e.buf);
 
       acceptedClient->close();
     });
-    acceptedClient = std::move(c);
+    acceptedClient = std::move(e.client);
   });
 
-  client->onConnect([&clientMsg](auto &client) {
+  client->on<EConnect>([&clientMsg](auto e, auto &client) {
     Buffer buf = {
       .base = (char *)clientMsg.c_str(), .len = clientMsg.size()
     };
     while (client.write(buf) < 0) { }
-
     client.readStart();
   });
 
-  client->onRead([&](const char *buf, ssize_t nread){
-    ((char *)buf)[nread] = '\0';
-    ASSERT_STREQ(serverMsg.c_str(), buf);
+  client->on<ERead>([&](auto e, auto &client){
+    ((char *)e.buf)[e.nread] = '\0';
+    ASSERT_STREQ(serverMsg.c_str(), e.buf);
 
-    client->close();
+    LOG_D("client received: %s", e.buf);
+
+    client.close();
     server->close();
   });
 

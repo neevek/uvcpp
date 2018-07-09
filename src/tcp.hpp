@@ -12,11 +12,11 @@
 #include "defs.h"
 
 namespace uvcpp {
+  struct EBind : public Event { };
+  struct EConnect : public Event { };
+
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
-      using BindCallback = std::function<void(Tcp &)>;
-      using ConnectCallback = std::function<void(Tcp &)>;
-
       virtual bool init() override {
         if (uv_tcp_init(Loop::get().getRaw(), get()) != 0) {
           LOG_E("failed to init Tcp");
@@ -25,20 +25,7 @@ namespace uvcpp {
         return true;
       }
 
-      void onBind(BindCallback callback) {
-        bindCallback_ = callback;
-      }
-
-      void onConnect(ConnectCallback callback) {
-        connectCallback_ = callback;
-      }
-
       bool bind(SockAddr *sa) {
-        if (!bindCallback_) {
-          LOG_E("BindCallback is not set");
-          return false;
-        }
-
         if (sa->sa_family == AF_INET || sa->sa_family == AF_INET6) {
           //// the port starts from sa_data
           //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
@@ -54,13 +41,8 @@ namespace uvcpp {
           }
 
           LOG_D("server binds on: %s:%d", getIP().c_str(), getPort());
-          if (bindCallback_) {
-            bindCallback_(*this);
-          }
+          publish<EBind>(EBind{});
 
-          //if (!tcp->setuid_.empty()) {
-            //NetUtil::doSetUID(tcp->setuid_.c_str());
-          //}
           return true;
         }
 
@@ -90,9 +72,6 @@ namespace uvcpp {
       }
 
       bool connect(SockAddr *sa) {
-        if (!connectCallback_) {
-          LOG_E("ConnectCallback is not set");
-        }
         if (!connectReq_) {
           connectReq_ = std::make_unique<ConnectReq>();
         }
@@ -156,7 +135,7 @@ namespace uvcpp {
       }
 
     protected:
-      virtual void doAccept(AcceptCallback<Tcp> acceptCallback) override {
+      virtual void doAccept() override {
         auto client = Tcp::create();
         if (!client) {
           return;
@@ -177,9 +156,7 @@ namespace uvcpp {
         }
 
         LOG_V("from client: %s:%d", client->getIP().c_str(), client->getPort());
-        if (acceptCallback) {
-          acceptCallback(std::move(client));
-        }
+        publish<EAccept<Tcp>>(EAccept<Tcp>{ std::move(client) });
       }
 
     private:
@@ -189,17 +166,12 @@ namespace uvcpp {
           tcp->reportError("uv_tcp_connect", status);
           return;
         }
-
-        if (tcp->connectCallback_) {
-          tcp->connectCallback_(*tcp);
-        }
+        tcp->template publish<EConnect>(EConnect{});
       }
 
     private:
       std::unique_ptr<DNSRequest> dnsReq_{nullptr};
       std::unique_ptr<ConnectReq> connectReq_{nullptr};
-      BindCallback bindCallback_{nullptr};
-      ConnectCallback connectCallback_{nullptr};
       SockAddrStorage sds_;
 
       std::string setuid_;

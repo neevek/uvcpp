@@ -11,29 +11,27 @@
 #include "defs.h"
 
 namespace uvcpp {
+  template <typename StreamType>
+  struct EAccept : public Event {
+    EAccept(std::unique_ptr<StreamType> client) : client(std::move(client)) { }
+    std::unique_ptr<StreamType> client;
+  };
+
+  struct ERead : public Event {
+    ERead(const char *buf, ssize_t nread) :
+      buf(buf), nread(nread) { }
+
+    const char *buf;
+    ssize_t nread;
+  };
 
   template <typename T, typename Derived>
-  class Stream : public Handle<T, Derived> {
+    class Stream : public Handle<T, Derived> {
     public:
-      template <typename U>
-      using AcceptCallback = std::function<void(std::unique_ptr<Derived>)>;
-      using ReadCallback = std::function<void(const char *buf, ssize_t nread)>;
+
       const static auto BUF_SIZE = 4096; 
 
-      void onRead(ReadCallback callback) {
-        readCallback_ = callback;
-      }
-
-      void onAccept(AcceptCallback<Derived> callback) {
-        acceptCallback_ = callback;
-      }
-
       void listen(int backlog) {
-        if (!acceptCallback_) {
-          LOG_E("AcceptCallback is not set");
-          return;
-        }
-
         int err;
         if ((err = uv_listen(reinterpret_cast<uv_stream_t *>(this->get()),
                 backlog, onConnectCallback)) != 0) {
@@ -76,7 +74,7 @@ namespace uvcpp {
       }
 
     protected:
-      virtual void doAccept(AcceptCallback<Derived> callback) = 0;
+      virtual void doAccept() = 0;
 
       static void onAllocCallback(
           uv_handle_t *handle, size_t size, uv_buf_t *buf) {
@@ -87,10 +85,8 @@ namespace uvcpp {
 
       static void onReadCallback(
           uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf) {
-        auto st = reinterpret_cast<Stream *>(handle->data);
-        if (st->readCallback_) {
-          st->readCallback_(buf->base, nread);
-        }
+        reinterpret_cast<Stream *>(handle->data)->template
+          publish<ERead>(ERead{ buf->base, nread });
       }
 
       static void onConnectCallback(uv_stream_t* stream, int status) {
@@ -99,13 +95,11 @@ namespace uvcpp {
         if (status < 0) {
           st->reportError("connect", status);
         } else {
-          st->doAccept(st->acceptCallback_);
+          st->doAccept();
         }
       }
 
     private:
-      AcceptCallback<Derived> acceptCallback_{nullptr};
-      ReadCallback readCallback_{nullptr};
       char readBuf_[BUF_SIZE];
   };
   

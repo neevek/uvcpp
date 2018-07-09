@@ -9,8 +9,8 @@ static std::string sasToIP(SockAddrStorage *sas) {
 
 TEST(Req, DNSRequestResolveLocalHost) {
   DNSRequest req{};
-  req.onError([](int status) {
-    FAIL() << "failed with status: " << status;
+  req.on<EError>([](auto e, auto &r) {
+    FAIL() << "failed with status: " << e.status;
   });
 
   req.resolve("localhost", [](auto vec) {
@@ -27,8 +27,8 @@ TEST(Req, DNSRequestResolveLocalHost) {
 
 TEST(Req, DNSRequest0000) {
   DNSRequest req{};
-  req.onError([](int status) {
-    FAIL() << "failed with status: " << status;
+  req.on<EError>([](auto e, auto &r) {
+    FAIL() << "failed with status: " << e.status;
   });
 
   req.resolve("0.0.0.0", [](auto vec) {
