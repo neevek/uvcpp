@@ -24,8 +24,16 @@ namespace uvcpp {
         readCallback_ = callback;
       }
 
-      void listen(int backlog, AcceptCallback<Derived> callback) {
+      void onAccept(AcceptCallback<Derived> callback) {
         acceptCallback_ = callback;
+      }
+
+      void listen(int backlog) {
+        if (!acceptCallback_) {
+          LOG_E("AcceptCallback is not set");
+          return;
+        }
+
         int err;
         if ((err = uv_listen(reinterpret_cast<uv_stream_t *>(this->get()),
                 backlog, onConnectCallback)) != 0) {

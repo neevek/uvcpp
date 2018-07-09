@@ -12,9 +12,10 @@ namespace uvcpp {
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
     public:
-      using CloseCallback = std::function<void(Handle *)>;
+      using CloseCallback = std::function<void(Handle &)>;
 
       void close() {
+        this->setData(this);
         if (!uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get()))) {
           uv_close((uv_handle_t *)this->get(), closeCallback);
         }
@@ -36,14 +37,14 @@ namespace uvcpp {
 
     private:
       static void closeCallback(uv_handle_t *h) {
-        auto handle = reinterpret_cast<Handle *>(h);
+        auto handle = reinterpret_cast<Handle *>(h->data);
         if (handle->closeCallback_) {
-          handle->closeCallback_(handle);
+          handle->closeCallback_(*handle);
         }
       }
 
     private:
-      CloseCallback closeCallback_;
+      CloseCallback closeCallback_{nullptr};
   };
 
 } /* end of namspace: uvcpp */
