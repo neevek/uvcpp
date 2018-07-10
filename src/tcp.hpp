@@ -12,8 +12,8 @@
 #include "defs.h"
 
 namespace uvcpp {
-  struct EBind : public Event { };
-  struct EConnect : public Event { };
+  struct EvBind : public Event { };
+  struct EvConnect : public Event { };
 
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
@@ -41,7 +41,7 @@ namespace uvcpp {
           }
 
           LOG_D("server binds on: %s:%d", getIP().c_str(), getPort());
-          publish<EBind>(EBind{});
+          publish<EvBind>(EvBind{});
 
           return true;
         }
@@ -156,7 +156,7 @@ namespace uvcpp {
         }
 
         LOG_V("from client: %s:%d", client->getIP().c_str(), client->getPort());
-        publish<EAccept<Tcp>>(EAccept<Tcp>{ std::move(client) });
+        publish<EvAccept<Tcp>>(EvAccept<Tcp>{ std::move(client) });
       }
 
     private:
@@ -166,7 +166,7 @@ namespace uvcpp {
           tcp->reportError("uv_tcp_connect", status);
           return;
         }
-        tcp->template publish<EConnect>(EConnect{});
+        tcp->template publish<EvConnect>(EvConnect{});
       }
 
     private:

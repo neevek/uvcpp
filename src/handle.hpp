@@ -10,7 +10,7 @@
 
 namespace uvcpp {
 
-  struct EClose : public Event { };
+  struct EvClose : public Event { };
 
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
@@ -35,7 +35,7 @@ namespace uvcpp {
     private:
       static void closeCallback(uv_handle_t *h) {
         reinterpret_cast<Handle *>(h->data)->template
-          publish<EClose>(EClose{});
+          publish<EvClose>(EvClose{});
       }
   };
 

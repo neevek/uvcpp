@@ -18,8 +18,8 @@
 namespace uvcpp {
 
   struct Event { };
-  struct EError : public Event {
-    EError(int status) : status(status) { }
+  struct EvError : public Event {
+    EvError(int status) : status(status) { }
     int status;
   };
 
@@ -86,7 +86,7 @@ namespace uvcpp {
     protected:
       void reportError(const char *funName, int err) {
         LOG_E("%s failed: %s", funName, uv_strerror(err));
-        publish<EError>(EError{ err });
+        publish<EvError>(EvError{ err });
       }
 
     private:

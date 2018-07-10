@@ -10,14 +10,14 @@ TEST(Tcp, Connection) {
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
-  server->on<EError>([](auto e, auto &tcp) {
+  server->on<EvError>([](auto e, auto &tcp) {
     FAIL() << "server failed with status: " << e.status;
   });
-  client->on<EError>([](auto e, auto &tcp) {
+  client->on<EvError>([](auto e, auto &tcp) {
     FAIL() << "client failed with status: " << e.status;
   });
-  client->on<EClose>([](auto e, auto &handle) {
-    LOG_E("client closed!!!");
+  client->on<EvClose>([](auto e, auto &handle) {
+    LOG_D("client closed!!!");
   });
 
   auto serverMsg = std::string{"greet from server!"};
@@ -25,19 +25,19 @@ TEST(Tcp, Connection) {
 
   std::shared_ptr<Tcp> acceptedClient;
 
-  server->on<EBind>([&client](auto e, auto &server) {
+  server->on<EvBind>([&client](auto e, auto &server) {
     server.listen(50);
     client->connect("127.0.0.1", 9000);
   });
 
-  server->on<EAccept<Tcp>>([&](auto e, auto &server) {
+  server->on<EvAccept<Tcp>>([&](auto e, auto &server) {
     Buffer buf = {
       .base = (char *)serverMsg.c_str(), .len = serverMsg.size()
     };
     while (e.client->write(buf) < 0) { }
 
     e.client->readStart();
-    e.client->template on<ERead>([&](auto e, auto &client) {
+    e.client->template on<EvRead>([&](auto e, auto &client) {
       ((char *)e.buf)[e.nread] = '\0';
       ASSERT_STREQ(clientMsg.c_str(), e.buf);
 
@@ -48,7 +48,7 @@ TEST(Tcp, Connection) {
     acceptedClient = std::move(e.client);
   });
 
-  client->on<EConnect>([&clientMsg](auto e, auto &client) {
+  client->on<EvConnect>([&clientMsg](auto e, auto &client) {
     Buffer buf = {
       .base = (char *)clientMsg.c_str(), .len = clientMsg.size()
     };
@@ -56,7 +56,7 @@ TEST(Tcp, Connection) {
     client.readStart();
   });
 
-  client->on<ERead>([&](auto e, auto &client){
+  client->on<EvRead>([&](auto e, auto &client){
     ((char *)e.buf)[e.nread] = '\0';
     ASSERT_STREQ(serverMsg.c_str(), e.buf);
 

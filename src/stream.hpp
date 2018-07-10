@@ -12,17 +12,22 @@
 
 namespace uvcpp {
   template <typename StreamType>
-  struct EAccept : public Event {
-    EAccept(std::unique_ptr<StreamType> client) : client(std::move(client)) { }
+  struct EvAccept : public Event {
+    EvAccept(std::unique_ptr<StreamType> client) : client(std::move(client)) { }
     std::unique_ptr<StreamType> client;
   };
 
-  struct ERead : public Event {
-    ERead(const char *buf, ssize_t nread) :
+  struct EvRead : public Event {
+    EvRead(const char *buf, ssize_t nread) :
       buf(buf), nread(nread) { }
 
     const char *buf;
     ssize_t nread;
+  };
+
+  struct EvShutdown : public Event {
+    EvShutdown(int status) : status(status) { }
+    int status;
   };
 
   template <typename T, typename Derived>
@@ -53,6 +58,10 @@ namespace uvcpp {
         if ((err = uv_read_stop(reinterpret_cast<uv_stream_t *>(this->get()))) != 0) {
           this->reportError("uv_read_stop", err);
         }
+      }
+
+      void shutdown() {
+
       }
 
       int write(const Buffer buf) {
@@ -86,7 +95,7 @@ namespace uvcpp {
       static void onReadCallback(
           uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf) {
         reinterpret_cast<Stream *>(handle->data)->template
-          publish<ERead>(ERead{ buf->base, nread });
+          publish<EvRead>(EvRead{ buf->base, nread });
       }
 
       static void onConnectCallback(uv_stream_t* stream, int status) {
