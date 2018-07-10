@@ -54,3 +54,4 @@ endmacro()
 
 ADD_UVCPP_TEST(req uvcpp/req.cc)
 ADD_UVCPP_TEST(tcp uvcpp/tcp.cc)
+ADD_UVCPP_TEST(timer uvcpp/timer.cc)

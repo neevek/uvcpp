@@ -10,5 +10,6 @@
 #include "defs.h"
 #include "stream.hpp"
 #include "tcp.hpp"
+#include "timer.hpp"
 
 #endif /* end of include guard: UVCPP_H_ */
