@@ -61,7 +61,18 @@ namespace uvcpp {
       }
 
       void shutdown() {
+        if (!shutdownReq_) {
+          shutdownReq_ = std::make_unique<ShutdownReq>();
+          shutdownReq_->setData(this);
+        }
 
+        int err;
+        if ((err = uv_shutdown(
+                shutdownReq_->get(),
+                reinterpret_cast<uv_stream_t *>(this->get()),
+                onShutdownCallback)) != 0) {
+          this->reportError("uv_shutdown", err);
+        }
       }
 
       int write(const Buffer buf) {
@@ -108,7 +119,13 @@ namespace uvcpp {
         }
       }
 
+      static void onShutdownCallback(uv_shutdown_t *r, int status) {
+        auto req = reinterpret_cast<Stream *>(r->data);
+        req->template publish<EvShutdown>(EvShutdown{ status });
+      }
+
     private:
+      std::unique_ptr<ShutdownReq> shutdownReq_{nullptr};
       char readBuf_[BUF_SIZE];
   };
   

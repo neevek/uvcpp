@@ -21,6 +21,8 @@ namespace uvcpp {
 
   class ConnectReq : public Req<uv_connect_t, ConnectReq> { };
 
+  class ShutdownReq : public Req<uv_shutdown_t, ShutdownReq> { };
+
   class DNSRequest : public Req<uv_getaddrinfo_t, DNSRequest> {
     public:
       using DNSResultVector = std::vector<std::unique_ptr<

@@ -36,6 +36,11 @@ TEST(Tcp, Connection) {
     };
     while (e.client->write(buf) < 0) { }
 
+    e.client->template on<EvShutdown>([&](auto e, auto &client) {
+      LOG_D("received client shutdown");
+    });
+    e.client->shutdown();
+
     e.client->readStart();
     e.client->template on<EvRead>([&](auto e, auto &client) {
       ((char *)e.buf)[e.nread] = '\0';
@@ -53,6 +58,11 @@ TEST(Tcp, Connection) {
       .base = (char *)clientMsg.c_str(), .len = clientMsg.size()
     };
     while (client.write(buf) < 0) { }
+    client.template on<EvShutdown>([&](auto e, auto &client) {
+      LOG_D("client shutdown");
+    });
+    client.shutdown();
+
     client.readStart();
   });
 
