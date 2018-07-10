@@ -54,7 +54,7 @@ namespace uvcpp {
         resource_.data = data;
       }
 
-      template<typename E>
+      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void on(EventCallback<E, Derived> &&callback) {
         auto index = getEventTypeIndex<E>();
         if (index >= callbacks_.size()) {
@@ -64,7 +64,7 @@ namespace uvcpp {
             std::forward<EventCallback<E, Derived>>(callback));
       }
 
-      template<typename E>
+      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void publish(E &&event) {
         auto index = getEventTypeIndex<E>();
         if (index < callbacks_.size()) {
