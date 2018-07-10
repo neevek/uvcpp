@@ -11,5 +11,6 @@
 #include "stream.hpp"
 #include "tcp.hpp"
 #include "timer.hpp"
+#include "prepare.hpp"
 
 #endif /* end of include guard: UVCPP_H_ */
