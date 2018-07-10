@@ -14,14 +14,49 @@
 #include "defs.h"
 
 namespace uvcpp {
+  struct EvWork : public Event { };
+  struct EvAfterWork : public Event { };
+
   template <typename T, typename Derived>
-  class Req : public Resource<T, Derived> { };
+  class Req : public Resource<T, Derived> {
+    public:
+      void cancel() {
+        int err;
+        if ((err = uv_cancel(reinterpret_cast<uv_req_t *>(this->get()))) < 0) {
+          this->reportError("uv_cancel", err);
+        }
+      }
+  };
 
   class WriteReq : public Req<uv_write_t, WriteReq> { };
 
   class ConnectReq : public Req<uv_connect_t, ConnectReq> { };
 
   class ShutdownReq : public Req<uv_shutdown_t, ShutdownReq> { };
+
+  class Work : public Req<uv_work_t, Work> {
+    public:
+      void start() {
+        int err;
+        if ((err = uv_queue_work(
+                Loop::get().getRaw(),
+                reinterpret_cast<uv_work_t *>(this->get()),
+                onWorkCallback, onAfterWorkCallback)) != 0) {
+          this->reportError("uv_queue_work", err);
+        }
+      }
+    
+    private:
+      static void onWorkCallback(uv_work_t *w) {
+        reinterpret_cast<Work *>(w->data)->template
+          publish<EvWork>(EvWork{});
+      }
+
+      static void onAfterWorkCallback(uv_work_t *w, int status) {
+        reinterpret_cast<Work *>(w->data)->template
+          publish<EvAfterWork>(EvAfterWork{});
+      }
+  };
 
   class DNSRequest : public Req<uv_getaddrinfo_t, DNSRequest> {
     public:
