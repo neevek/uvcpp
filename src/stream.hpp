@@ -9,6 +9,7 @@
 #include "handle.hpp"
 #include "req.hpp"
 #include "defs.h"
+#include <deque>
 
 namespace uvcpp {
   template <typename StreamType>
@@ -23,6 +24,11 @@ namespace uvcpp {
 
     const char *buf;
     ssize_t nread;
+  };
+
+  struct EvWrite : public Event {
+    EvWrite(int status) : status(status) { }
+    int status;
   };
 
   struct EvShutdown : public Event {
@@ -74,15 +80,41 @@ namespace uvcpp {
         }
       }
 
-      int write(const Buffer buf) {
-        return write(&buf, 1);
+      /**
+       * buffer.base should only be released when this method returns
+       * false or the EvWrite event is received
+       */
+      bool writeAsync(Buffer buffer) {
+        int err = 0;
+        if (hasPendingWrite_) {
+          pendingWriteBuffers_.push_back(buffer);
+          LOG_E(">>>>> has pending write: %lu", pendingWriteBuffers_.size());
+
+        } else {
+          if (!writeReq_) {
+            writeReq_ = std::make_unique<WriteReq>();
+          }
+
+          hasPendingWrite_ = true;
+          if ((err = uv_write(
+                  writeReq_->get(),
+                  reinterpret_cast<uv_stream_t *>(this->get()),
+                  &buffer, 1, onWriteCallback)) != 0) {
+            this->reportError("uv_write", err);
+          }
+        }
+        return err == 0;
+      }
+
+      int writeSync(const Buffer buf) {
+        return writeSync(&buf, 1);
       }
 
       /**
        * > 0: number of bytes written (can be less than the supplied buffer size).
        * < 0: negative error code (UV_EAGAIN is returned if no data can be sent immediately).
        */
-      int write(const Buffer bufs[], unsigned int nBufs) {
+      int writeSync(const Buffer bufs[], unsigned int nBufs) {
         //uv_buf_t buf = { .base = const_cast<char *>(data), .len = len };
         int err;
         if ((err = uv_try_write(
@@ -108,6 +140,24 @@ namespace uvcpp {
           publish<EvRead>(EvRead{ buf->base, nread });
       }
 
+      static void onWriteCallback(uv_write_t *req, int status) {
+        auto st = reinterpret_cast<Stream *>(req->handle->data);
+        st->hasPendingWrite_ = false;
+
+        if (status < 0) {
+          st->reportError("write", status);
+
+        } else {
+          if (!st->pendingWriteBuffers_.empty()) {
+            Buffer buffer = st->pendingWriteBuffers_.front();
+            st->pendingWriteBuffers_.pop_front();
+            st->writeAsync(buffer);
+          }
+
+          st->template publish<EvWrite>(EvWrite{ status });
+        }
+      }
+
       static void onConnectCallback(uv_stream_t* stream, int status) {
         auto st = reinterpret_cast<Stream *>(stream->data);
 
@@ -124,6 +174,10 @@ namespace uvcpp {
       }
 
     private:
+      std::unique_ptr<WriteReq> writeReq_{nullptr};
+      std::deque<Buffer> pendingWriteBuffers_{};
+      bool hasPendingWrite_{false};
+
       std::unique_ptr<ShutdownReq> shutdownReq_{nullptr};
       char readBuf_[BUF_SIZE];
   };

@@ -34,7 +34,9 @@ TEST(Tcp, Connection) {
     Buffer buf = {
       .base = (char *)serverMsg.c_str(), .len = serverMsg.size()
     };
-    while (e.client->write(buf) < 0) { }
+    if (!e.client->writeAsync(buf)) {
+      return;
+    }
 
     e.client->template on<EvShutdown>([&](auto e, auto &client) {
       LOG_D("received client shutdown");
@@ -53,11 +55,19 @@ TEST(Tcp, Connection) {
     acceptedClient = std::move(e.client);
   });
 
-  client->on<EvConnect>([&clientMsg](auto e, auto &client) {
+  const int EXPECTED_WRITE_COUNT = 1;
+  int writeCount = 0;
+  client->on<EvConnect>([&clientMsg, &writeCount](auto e, auto &client) {
+    client.template on<EvWrite>([&](auto e, auto &client) {
+      ++writeCount;
+    });
     Buffer buf = {
       .base = (char *)clientMsg.c_str(), .len = clientMsg.size()
     };
-    while (client.write(buf) < 0) { }
+    if (!client.writeAsync(buf)) {
+      return;
+    }
+
     client.template on<EvShutdown>([&](auto e, auto &client) {
       LOG_D("client shutdown");
     });
@@ -79,4 +89,6 @@ TEST(Tcp, Connection) {
   server->bind("0.0.0.0", 9000);
 
   Loop::get().run();
+
+  ASSERT_EQ(writeCount, EXPECTED_WRITE_COUNT);
 }
