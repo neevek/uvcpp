@@ -63,7 +63,6 @@ namespace uvcpp {
       void shutdown() {
         if (!shutdownReq_) {
           shutdownReq_ = std::make_unique<ShutdownReq>();
-          shutdownReq_->setData(this);
         }
 
         int err;
@@ -120,7 +119,7 @@ namespace uvcpp {
       }
 
       static void onShutdownCallback(uv_shutdown_t *r, int status) {
-        auto req = reinterpret_cast<Stream *>(r->data);
+        auto req = reinterpret_cast<Stream *>(r->handle->data);
         req->template publish<EvShutdown>(EvShutdown{ status });
       }
 

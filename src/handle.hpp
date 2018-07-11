@@ -16,7 +16,6 @@ namespace uvcpp {
   class Handle : public Resource<T, Derived> {
     public:
       void close() {
-        this->setData(this);
         if (!uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get()))) {
           uv_close((uv_handle_t *)this->get(), closeCallback);
         }

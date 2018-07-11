@@ -78,7 +78,7 @@ namespace uvcpp {
 
         //// the port starts from sa_data
         //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
-        connectReq_->setData(this);
+        //connectReq_->setData(this);
 
         int err;
         if ((err = uv_tcp_connect(connectReq_->get(), get(), sa, onConnect)) != 0) {
@@ -161,7 +161,7 @@ namespace uvcpp {
 
     private:
       static void onConnect(uv_connect_t *req, int status) {
-        auto tcp = reinterpret_cast<Tcp *>(req->data);
+        auto tcp = reinterpret_cast<Tcp *>(req->handle->data);
         if (status < 0) {
           tcp->reportError("uv_tcp_connect", status);
           return;

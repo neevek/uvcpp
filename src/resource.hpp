@@ -40,7 +40,7 @@ namespace uvcpp {
       using Type = T;
 
       explicit Resource() {
-        setData(this);
+        resource_.data = this;
       }
       virtual ~Resource() = default;
       Resource &&operator=(const Resource &) = delete;
@@ -48,10 +48,6 @@ namespace uvcpp {
 
       Type *get() {
         return &resource_;
-      }
-
-      void setData(void *data) {
-        resource_.data = data;
       }
 
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
