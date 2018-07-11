@@ -19,7 +19,6 @@ namespace uvcpp {
   struct Buffer {
     char *data;
     size_t len;
-    size_t capacity;
   };
 
   enum class IPVersion {
