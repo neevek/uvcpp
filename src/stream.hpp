@@ -77,11 +77,10 @@ namespace uvcpp {
        * buffer.base should only be released when this method returns
        * false or the EvWrite event is received
        */
-      bool writeAsync(Buffer buffer) {
+      bool writeAsync(Buffer &buffer) {
         int err = 0;
         if (hasPendingWrite_) {
           pendingWriteBuffers_.push_back(buffer);
-          LOG_E(">>>>> has pending write: %lu", pendingWriteBuffers_.size());
 
         } else {
           if (!writeReq_) {
@@ -104,7 +103,7 @@ namespace uvcpp {
        * > 0: number of bytes written (can be less than the supplied buffer size).
        * < 0: negative error code (UV_EAGAIN is returned if no data can be sent immediately).
        */
-      int writeSync(Buffer buf) {
+      int writeSync(Buffer &buf) {
         //uv_buf_t buf = { .base = const_cast<char *>(data), .len = len };
         int err;
         if ((err = uv_try_write(
