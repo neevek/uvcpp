@@ -13,8 +13,8 @@
 namespace uvcpp {
   #define STRINGIFY(s) #s
 
-  auto ByteArrayDeleter = [](unsigned char *p) { delete [] p; };
-  using ByteArray = std::unique_ptr<unsigned char, decltype(ByteArrayDeleter)>;
+  auto ByteArrayDeleter = [](char *p) { delete [] p; };
+  using ByteArray = std::unique_ptr<char, decltype(ByteArrayDeleter)>;
   using Buffer = uv_buf_t;
 
   enum class IPVersion {
