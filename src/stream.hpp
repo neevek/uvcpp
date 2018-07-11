@@ -26,15 +26,8 @@ namespace uvcpp {
     ssize_t nread;
   };
 
-  struct EvWrite : public Event {
-    EvWrite(int status) : status(status) { }
-    int status;
-  };
-
-  struct EvShutdown : public Event {
-    EvShutdown(int status) : status(status) { }
-    int status;
-  };
+  struct EvWrite : public Event { };
+  struct EvShutdown : public Event { };
 
   template <typename T, typename Derived>
     class Stream : public Handle<T, Derived> {
@@ -154,7 +147,7 @@ namespace uvcpp {
             st->writeAsync(buffer);
           }
 
-          st->template publish<EvWrite>(EvWrite{ status });
+          st->template publish<EvWrite>(EvWrite{});
         }
       }
 
@@ -170,7 +163,7 @@ namespace uvcpp {
 
       static void onShutdownCallback(uv_shutdown_t *r, int status) {
         auto req = reinterpret_cast<Stream *>(r->handle->data);
-        req->template publish<EvShutdown>(EvShutdown{ status });
+        req->template publish<EvShutdown>(EvShutdown{});
       }
 
     private:
