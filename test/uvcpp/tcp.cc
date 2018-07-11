@@ -32,7 +32,7 @@ TEST(Tcp, Connection) {
 
   server->on<EvAccept<Tcp>>([&](auto e, auto &server) {
     Buffer buf = {
-      .base = (char *)serverMsg.c_str(), .len = serverMsg.size()
+      .data = (char *)serverMsg.c_str(), .len = serverMsg.size()
     };
     if (!e.client->writeAsync(buf)) {
       return;
@@ -62,7 +62,7 @@ TEST(Tcp, Connection) {
       ++writeCount;
     });
     Buffer buf = {
-      .base = (char *)clientMsg.c_str(), .len = clientMsg.size()
+      .data = (char *)clientMsg.c_str(), .len = clientMsg.size()
     };
     if (!client.writeAsync(buf)) {
       return;

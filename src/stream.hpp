@@ -92,26 +92,24 @@ namespace uvcpp {
           if ((err = uv_write(
                   writeReq_->get(),
                   reinterpret_cast<uv_stream_t *>(this->get()),
-                  &buffer, 1, onWriteCallback)) != 0) {
+                  reinterpret_cast<uv_buf_t *>(&buffer),
+                  1, onWriteCallback)) != 0) {
             this->reportError("uv_write", err);
           }
         }
         return err == 0;
       }
 
-      int writeSync(const Buffer buf) {
-        return writeSync(&buf, 1);
-      }
-
       /**
        * > 0: number of bytes written (can be less than the supplied buffer size).
        * < 0: negative error code (UV_EAGAIN is returned if no data can be sent immediately).
        */
-      int writeSync(const Buffer bufs[], unsigned int nBufs) {
+      int writeSync(Buffer buf) {
         //uv_buf_t buf = { .base = const_cast<char *>(data), .len = len };
         int err;
         if ((err = uv_try_write(
-            reinterpret_cast<uv_stream_t *>(this->get()), bufs, nBufs)) < 0) {
+            reinterpret_cast<uv_stream_t *>(this->get()),
+            reinterpret_cast<uv_buf_t *>(&buf), 1)) < 0) {
           this->reportError("uv_try_write", err);
         }
         return err;
