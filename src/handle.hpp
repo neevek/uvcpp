@@ -21,6 +21,10 @@ namespace uvcpp {
         }
       }
 
+      bool isValid() {
+        return uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get())) == 0;
+      }
+
       static auto create() {
         using HandleType = 
           typename std::enable_if_t<

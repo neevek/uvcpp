@@ -17,7 +17,7 @@ TEST(Tcp, Connection) {
     FAIL() << "client failed with status: " << e.status;
   });
   client->on<EvClose>([](auto e, auto &handle) {
-    LOG_D("client closed!!!");
+    LOG_D("client closed: isValid=%d", handle.isValid());
   });
 
   auto serverMsg = std::string{"greet from server!"};
