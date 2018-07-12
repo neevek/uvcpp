@@ -25,7 +25,7 @@ namespace uvcpp {
         len_ = len;
       }
 
-      const char *getData() const {
+      char *getData() const {
         return data_;
       }
 
