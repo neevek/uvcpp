@@ -29,8 +29,12 @@ namespace uvcpp {
         return data_;
       }
 
-      size_t getLen() const {
+      size_t getLength() const {
         return len_;
+      }
+
+      void setLength(size_t len) {
+        len_ = len;
       }
 
       size_t getCapacity() const {
