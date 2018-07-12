@@ -129,7 +129,7 @@ namespace uvcpp {
           });
         }
 
-        Resource<T, Derived>::reportError(funName, err);
+        Handle<T, Derived>::reportError(funName, err);
       }
 
       static void onAllocCallback(

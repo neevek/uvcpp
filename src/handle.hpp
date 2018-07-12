@@ -35,6 +35,12 @@ namespace uvcpp {
 
       virtual bool init() = 0;
 
+    protected:
+      virtual void reportError(const char *funName, int err) {
+        Resource<T, Derived>::reportError(funName, err);
+        close();
+      }
+
     private:
       static void closeCallback(uv_handle_t *h) {
         reinterpret_cast<Handle *>(h->data)->template
