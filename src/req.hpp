@@ -11,7 +11,7 @@
 #include <vector>
 #include "resource.hpp"
 #include "util.hpp"
-#include "defs.h"
+#include "buffer.h"
 
 namespace uvcpp {
   struct EvWork : public Event { };
@@ -28,7 +28,11 @@ namespace uvcpp {
       }
   };
 
-  class WriteReq : public Req<uv_write_t, WriteReq> { };
+  class WriteReq : public Req<uv_write_t, WriteReq> {
+    public:
+      WriteReq(std::unique_ptr<Buffer> buffer) : buffer(std::move(buffer)) { }
+      std::unique_ptr<Buffer> buffer;
+  };
 
   class ConnectReq : public Req<uv_connect_t, ConnectReq> { };
 

@@ -31,10 +31,9 @@ TEST(Tcp, Connection) {
   });
 
   server->on<EvAccept<Tcp>>([&](auto e, auto &server) {
-    Buffer buf = {
-      .data = (char *)serverMsg.c_str(), .len = serverMsg.size()
-    };
-    if (!e.client->writeAsync(buf)) {
+    auto buf = std::make_unique<Buffer>(serverMsg.size() + 1);
+    buf->assign(serverMsg.c_str(), serverMsg.size());
+    if (!e.client->writeAsync(std::move(buf))) {
       return;
     }
 
@@ -58,13 +57,16 @@ TEST(Tcp, Connection) {
   const int EXPECTED_WRITE_COUNT = 1;
   int writeCount = 0;
   client->on<EvConnect>([&clientMsg, &writeCount](auto e, auto &client) {
+    client.template on<EvBufferRecycled>([&](auto e, auto &client) {
+      LOG_D("buffer recycled: %p", e.buffer.get());
+    });
     client.template once<EvWrite>([&](auto e, auto &client) {
       ++writeCount;
     });
-    Buffer buf = {
-      .data = (char *)clientMsg.c_str(), .len = clientMsg.size()
-    };
-    if (!client.writeAsync(buf)) {
+
+    auto buf = std::make_unique<Buffer>(clientMsg.size() + 1);
+    buf->assign(clientMsg.c_str(), clientMsg.size());
+    if (!client.writeAsync(std::move(buf))) {
       return;
     }
 

@@ -16,11 +16,6 @@ namespace uvcpp {
   auto ByteArrayDeleter = [](char *p) { delete [] p; };
   using ByteArray = std::unique_ptr<char, decltype(ByteArrayDeleter)>;
 
-  struct Buffer {
-    char *data;
-    size_t len;
-  };
-
   enum class IPVersion {
     IPV4,
     IPV6

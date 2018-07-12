@@ -7,9 +7,6 @@
 #ifndef UVCPP_TCP_H_
 #define UVCPP_TCP_H_
 #include "stream.hpp"
-#include "req.hpp"
-#include "util.hpp"
-#include "defs.h"
 
 namespace uvcpp {
   struct EvBind : public Event { };

@@ -9,6 +9,7 @@
 #include "handle.hpp"
 #include "req.hpp"
 #include "defs.h"
+#include "buffer.h"
 #include <deque>
 
 namespace uvcpp {
@@ -28,6 +29,11 @@ namespace uvcpp {
 
   struct EvWrite : public Event { };
   struct EvShutdown : public Event { };
+  struct EvBufferRecycled : public Event {
+    EvBufferRecycled(std::unique_ptr<Buffer> &&buffer) :
+      buffer(std::forward<std::unique_ptr<Buffer>>(buffer)) { }
+    std::unique_ptr<Buffer> buffer;
+  };
 
   template <typename T, typename Derived>
     class Stream : public Handle<T, Derived> {
@@ -77,26 +83,24 @@ namespace uvcpp {
        * buffer.base should only be released when this method returns
        * false or the EvWrite event is received
        */
-      bool writeAsync(const Buffer &buffer) {
-        int err = 0;
-        if (hasPendingWrite_) {
-          pendingWriteBuffers_.push_back(buffer);
+      bool writeAsync(std::unique_ptr<Buffer> buffer) {
+        auto rawBuffer = buffer.get();
 
-        } else {
-          if (!writeReq_) {
-            writeReq_ = std::make_unique<WriteReq>();
-          }
+        auto req = std::make_unique<WriteReq>(std::move(buffer));
+        auto rawReq = req->get();
 
-          hasPendingWrite_ = true;
-          if ((err = uv_write(
-                  writeReq_->get(),
-                  reinterpret_cast<uv_stream_t *>(this->get()),
-                  reinterpret_cast<const uv_buf_t *>(&buffer),
-                  1, onWriteCallback)) != 0) {
-            this->reportError("uv_write", err);
-          }
+        pendingReqs_.push_back(std::move(req));
+
+        int err;
+        if ((err = uv_write(
+                rawReq,
+                reinterpret_cast<uv_stream_t *>(this->get()),
+                reinterpret_cast<uv_buf_t *>(rawBuffer),
+                1, onWriteCallback)) != 0) {
+          this->reportError("uv_write", err);
+          return false;
         }
-        return err == 0;
+        return true;
       }
 
       /**
@@ -117,6 +121,17 @@ namespace uvcpp {
     protected:
       virtual void doAccept() = 0;
 
+      virtual void reportError(const char *funName, int err) override {
+        if (!pendingReqs_.empty()) {
+          std::for_each(pendingReqs_.begin(), pendingReqs_.end(), [this](auto &r) {
+            this->template publish<EvBufferRecycled>(
+              EvBufferRecycled{ std::move(r->buffer) });
+          });
+        }
+
+        Resource<T, Derived>::reportError(funName, err);
+      }
+
       static void onAllocCallback(
           uv_handle_t *handle, size_t size, uv_buf_t *buf) {
         auto st = reinterpret_cast<Stream *>(handle->data);
@@ -132,16 +147,16 @@ namespace uvcpp {
 
       static void onWriteCallback(uv_write_t *req, int status) {
         auto st = reinterpret_cast<Stream *>(req->handle->data);
-        st->hasPendingWrite_ = false;
-
         if (status < 0) {
           st->reportError("write", status);
 
         } else {
-          if (!st->pendingWriteBuffers_.empty()) {
-            Buffer buffer = st->pendingWriteBuffers_.front();
-            st->pendingWriteBuffers_.pop_front();
-            st->writeAsync(buffer);
+          if (!st->pendingReqs_.empty()) {
+            auto req = std::move(st->pendingReqs_.front());
+            st->pendingReqs_.pop_front();
+
+            st->template publish<EvBufferRecycled>(
+              EvBufferRecycled{ std::move(req->buffer) });
           }
 
           st->template publish<EvWrite>(EvWrite{});
@@ -164,10 +179,7 @@ namespace uvcpp {
       }
 
     private:
-      std::unique_ptr<WriteReq> writeReq_{nullptr};
-      std::deque<Buffer> pendingWriteBuffers_{};
-      bool hasPendingWrite_{false};
-
+      std::deque<std::unique_ptr<WriteReq>> pendingReqs_{};
       std::unique_ptr<ShutdownReq> shutdownReq_{nullptr};
       char readBuf_[BUF_SIZE];
   };
