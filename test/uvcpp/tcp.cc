@@ -58,7 +58,7 @@ TEST(Tcp, Connection) {
   const int EXPECTED_WRITE_COUNT = 1;
   int writeCount = 0;
   client->on<EvConnect>([&clientMsg, &writeCount](auto e, auto &client) {
-    client.template on<EvWrite>([&](auto e, auto &client) {
+    client.template once<EvWrite>([&](auto e, auto &client) {
       ++writeCount;
     });
     Buffer buf = {

@@ -36,9 +36,13 @@ namespace uvcpp {
 
   template <typename T, typename Derived>
   class Resource {
+    enum class CallbackType {
+      ALWAYS,
+      ONCE
+    };
+
     public:
       using Type = T;
-
       explicit Resource() {
         resource_.data = this;
       }
@@ -52,7 +56,7 @@ namespace uvcpp {
 
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void on(EventCallback<E, Derived> &&callback) {
-        auto index = getEventTypeIndex<E>();
+        auto index = getEventTypeIndex<E, CallbackType::ALWAYS>();
         if (index >= callbacks_.size()) {
           callbacks_.resize(index + 1);
         }
@@ -61,14 +65,21 @@ namespace uvcpp {
       }
 
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
+      void once(EventCallback<E, Derived> &&callback) {
+        auto index = getEventTypeIndex<E, CallbackType::ONCE>();
+        if (index >= onceCallbacks_.size()) {
+          onceCallbacks_.resize(index + 1);
+        }
+        onceCallbacks_[index] = std::make_unique<Callback<E, Derived>>(
+            std::forward<EventCallback<E, Derived>>(callback));
+      }
+
+      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void publish(E &&event) {
-        auto index = getEventTypeIndex<E>();
-        if (index < callbacks_.size()) {
-          auto &callback = callbacks_[index];
-          if (callback) {
-            static_cast<Callback<E, Derived> *>(callback.get())
-              ->callback(std::forward<E>(event), static_cast<Derived &>(*this));
-          }
+        doCallback<E, CallbackType::ALWAYS>(std::forward<E>(event));
+        auto index = doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
+        if (index != -1) {
+          onceCallbacks_[index] = nullptr;
         }
       }
 
@@ -86,20 +97,37 @@ namespace uvcpp {
       }
 
     private:
+      template<typename E, CallbackType t>
+      int doCallback(E &&event) {
+        auto index = getEventTypeIndex<E, t>();
+        auto &callbacks = t == CallbackType::ALWAYS ? callbacks_ : onceCallbacks_;
+        if (index < callbacks.size()) {
+          auto &callback = callbacks[index];
+          if (callback) {
+            static_cast<Callback<E, Derived> *>(callback.get())
+              ->callback(std::forward<E>(event), static_cast<Derived &>(*this));
+            return index;
+          }
+        }
+        return -1;
+      }
+
+      template <CallbackType>
       static std::size_t countEventTypeIndex() {
         static std::size_t index = 0;
         return index++;
       }
 
-      template <typename>
+      template <typename E, CallbackType t>
       static std::size_t getEventTypeIndex() {
-        static std::size_t index = countEventTypeIndex();
+        static std::size_t index = countEventTypeIndex<t>();
         return index;
       }
     
     private:
       Type resource_;
       std::vector<std::unique_ptr<CallbackInterface>> callbacks_{};
+      std::vector<std::unique_ptr<CallbackInterface>> onceCallbacks_{};
   };
 } /* end of namspace: uvcpp */
 
