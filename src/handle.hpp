@@ -33,6 +33,14 @@ namespace uvcpp {
         return handle->init() ? std::move(handle) : nullptr;
       }
 
+      static auto createShared() {
+        using HandleType = 
+          typename std::enable_if_t<
+          std::is_base_of<Handle<typename Derived::Type, Derived>, Derived>::value, Derived>;
+        auto handle = std::make_shared<HandleType>();
+        return handle->init() ? handle : nullptr;
+      }
+
       virtual bool init() = 0;
 
     protected:

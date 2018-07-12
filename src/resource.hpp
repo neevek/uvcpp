@@ -90,6 +90,13 @@ namespace uvcpp {
         return std::make_unique<ResourceType>();
       }
 
+      static auto createShared() {
+        using ResourceType = 
+          typename std::enable_if_t<
+          std::is_base_of<Resource<typename Derived::Type, Derived>, Derived>::value, Derived>;
+        return std::make_shared<ResourceType>();
+      }
+
     protected:
       virtual void reportError(const char *funName, int err) {
         LOG_E("%s failed: %s", funName, uv_strerror(err));
