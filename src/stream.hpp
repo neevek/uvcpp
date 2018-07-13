@@ -141,8 +141,20 @@ namespace uvcpp {
 
       static void onReadCallback(
           uv_stream_t *handle, ssize_t nread, const uv_buf_t *buf) {
-        reinterpret_cast<Stream *>(handle->data)->template
-          publish<EvRead>(EvRead{ buf->base, nread });
+        if (nread == 0) { // EAGAIN || EWOULDBLOCK
+          return;
+        }
+
+        auto st = reinterpret_cast<Stream *>(handle->data);
+        if (nread < 0) {
+          if (nread != UV_EOF) {
+            LOG_E("TCP read failed: %s", uv_strerror(nread));
+          }
+          st->close();
+          return;
+        }
+
+        st->template publish<EvRead>(EvRead{ buf->base, nread });
       }
 
       static void onWriteCallback(uv_write_t *req, int status) {
