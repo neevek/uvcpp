@@ -27,7 +27,7 @@ namespace uvcpp {
           //// the port starts from sa_data
           //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
 
-          memcpy(&sds_, sa, sa->sa_family == AF_INET ?
+          memcpy(&sas_, sa, sa->sa_family == AF_INET ?
               sizeof(SockAddr4) : sizeof(SockAddr6));
 
           int err;
@@ -86,10 +86,9 @@ namespace uvcpp {
       }
 
       void connect(const std::string &host, uint16_t port) {
-        SockAddrStorage sas;
-        if (NetUtil::convertIPAddress(host, port, &sas)) {
+        if (NetUtil::convertIPAddress(host, port, &sas_)) {
           LOG_D("host is IP address: %s", host.c_str());
-          connect(reinterpret_cast<SockAddr *>(&sas));
+          connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
           LOG_E("failed to convert IP address: %s", host.c_str());
@@ -124,11 +123,11 @@ namespace uvcpp {
       }
 
       std::string getIP() {
-        return NetUtil::ip(reinterpret_cast<SockAddr *>(&sds_));
+        return NetUtil::ip(reinterpret_cast<SockAddr *>(&sas_));
       }
 
       uint16_t getPort() {
-        return NetUtil::port(reinterpret_cast<SockAddr *>(&sds_));
+        return NetUtil::port(reinterpret_cast<SockAddr *>(&sas_));
       }
 
     protected:
@@ -145,9 +144,9 @@ namespace uvcpp {
           return;
         }
 
-        int len = sizeof(client->sds_);
+        int len = sizeof(client->sas_);
         if ((err = uv_tcp_getpeername(client->get(),
-                reinterpret_cast<SockAddr *>(&client->sds_), &len)) != 0) {
+                reinterpret_cast<SockAddr *>(&client->sas_), &len)) != 0) {
           LOG_E("uv_tcp_getpeername failed: %s", uv_strerror(err));
           return;
         }
@@ -169,7 +168,7 @@ namespace uvcpp {
     private:
       std::unique_ptr<DNSRequest> dnsReq_{nullptr};
       std::unique_ptr<ConnectReq> connectReq_{nullptr};
-      SockAddrStorage sds_;
+      SockAddrStorage sas_;
 
       std::string setuid_;
   };
