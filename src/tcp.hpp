@@ -15,7 +15,7 @@ namespace uvcpp {
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
       virtual bool init() override {
-        if (uv_tcp_init(Loop::get().getRaw(), get()) != 0) {
+        if (!Stream::init() || uv_tcp_init(Loop::get().getRaw(), get()) != 0) {
           LOG_E("failed to init Tcp");
           return false;
         }
@@ -49,7 +49,7 @@ namespace uvcpp {
       void bind(const std::string &host, uint16_t port) {
         SockAddrStorage sas;
         if (NetUtil::convertIPAddress(host, port, &sas)) {
-          LOG_D("host is IP address: %s", host.c_str());
+          LOG_D("will bind on ip address: %s", host.c_str());
           bind(reinterpret_cast<SockAddr *>(&sas));
           return;
         }
@@ -87,11 +87,12 @@ namespace uvcpp {
 
       void connect(const std::string &host, uint16_t port) {
         if (NetUtil::convertIPAddress(host, port, &sas_)) {
-          LOG_D("host is IP address: %s", host.c_str());
+          LOG_D("will connect to ip address: %s", host.c_str());
           connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
           LOG_E("failed to convert IP address: %s", host.c_str());
+          close();
         }
       }
 

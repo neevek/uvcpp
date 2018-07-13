@@ -118,19 +118,24 @@ namespace uvcpp {
         return err;
       }
 
-    protected:
-      virtual void doAccept() = 0;
-
-      virtual void reportError(const char *funName, int err) override {
-        if (!pendingReqs_.empty()) {
-          std::for_each(pendingReqs_.begin(), pendingReqs_.end(), [this](auto &r) {
-            this->template publish<EvBufferRecycled>(
-              EvBufferRecycled{ std::move(r->buffer) });
-          });
+      virtual bool init() override {
+        if (!Handle<T, Derived>::init()) {
+          return false;
         }
 
-        Handle<T, Derived>::reportError(funName, err);
+        this->template once<EvError>([this](auto e, auto &st){
+          if (!pendingReqs_.empty()) {
+            std::for_each(pendingReqs_.begin(), pendingReqs_.end(), [this](auto &r) {
+              this->template publish<EvBufferRecycled>(
+                EvBufferRecycled{ std::move(r->buffer) });
+            });
+          }
+        });
+        return true;
       }
+
+    protected:
+      virtual void doAccept() = 0;
 
       static void onAllocCallback(
           uv_handle_t *handle, size_t size, uv_buf_t *buf) {

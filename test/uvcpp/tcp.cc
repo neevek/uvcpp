@@ -94,3 +94,26 @@ TEST(Tcp, Connection) {
 
   ASSERT_EQ(writeCount, EXPECTED_WRITE_COUNT);
 }
+
+TEST(Tcp, TestFail) {
+  auto client = Tcp::create();
+  ASSERT_TRUE(!!client);
+
+  client->once<EvConnect>([](auto e, auto &client) {
+    // will no reach here
+    FAIL();
+  });
+
+  client->on<EvRead>([&](auto e, auto &client){
+    // will no reach here
+    FAIL();
+  });
+
+  client->on<EvError>([&](auto e, auto &client){
+    client.close();
+  });
+
+  client->connect("nonexist", 1234);
+
+  Loop::get().run();
+}

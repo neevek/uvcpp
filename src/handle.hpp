@@ -25,28 +25,21 @@ namespace uvcpp {
         return uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get())) == 0;
       }
 
+      virtual bool init() {
+        this->template once<EvError>([this](auto e, auto &handle){
+          close();
+        });
+        return true;
+      }
+
       static auto create() {
-        using HandleType = 
-          typename std::enable_if_t<
-          std::is_base_of<Handle<typename Derived::Type, Derived>, Derived>::value, Derived>;
-        auto handle = std::make_unique<HandleType>();
+        auto handle = Resource<T, Derived>::create();
         return handle->init() ? std::move(handle) : nullptr;
       }
 
       static auto createShared() {
-        using HandleType = 
-          typename std::enable_if_t<
-          std::is_base_of<Handle<typename Derived::Type, Derived>, Derived>::value, Derived>;
-        auto handle = std::make_shared<HandleType>();
+        auto handle = Resource<T, Derived>::createShared();
         return handle->init() ? handle : nullptr;
-      }
-
-      virtual bool init() = 0;
-
-    protected:
-      virtual void reportError(const char *funName, int err) {
-        Resource<T, Derived>::reportError(funName, err);
-        close();
       }
 
     private:
