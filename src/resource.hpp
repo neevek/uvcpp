@@ -72,14 +72,14 @@ namespace uvcpp {
         doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
       }
 
-      template <typename U = Derived, typename = typename std::enable_if_t<
-        std::is_base_of<Derived, U>::value, U>>
+      template <typename U = Derived, typename =
+        std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
       static auto createUnique() {
         return std::make_unique<U>();
       }
 
-      template <typename U = Derived, typename = typename std::enable_if_t<
-        std::is_base_of<Derived, U>::value, U>>
+      template <typename U = Derived, typename =
+        std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
       static auto createShared() {
         return std::make_shared<U>();
       }
