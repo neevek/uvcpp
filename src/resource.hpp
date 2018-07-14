@@ -86,7 +86,6 @@ namespace uvcpp {
 
     protected:
       void reportError(const char *funName, int err) {
-        LOG_E("%s failed: %s", funName, uv_strerror(err));
         publish<EvError>(EvError{ err });
       }
 
