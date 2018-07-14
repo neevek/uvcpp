@@ -32,13 +32,15 @@ namespace uvcpp {
         return true;
       }
 
+      template <typename U = Derived>
       static auto create() {
-        auto handle = Resource<T, Derived>::create();
+        auto handle = Resource<T, U>::template create<U>();
         return handle->init() ? std::move(handle) : nullptr;
       }
 
+      template <typename U = Derived>
       static auto createShared() {
-        auto handle = Resource<T, Derived>::createShared();
+        auto handle = Resource<T, U>::template createShared<U>();
         return handle->init() ? handle : nullptr;
       }
 

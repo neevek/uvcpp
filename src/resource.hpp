@@ -50,7 +50,7 @@ namespace uvcpp {
       Resource &&operator=(const Resource &) = delete;
       Resource &&operator=(const Resource &&) = delete;
 
-      Type *get() {
+      T *get() {
         return &resource_;
       }
 
@@ -72,18 +72,16 @@ namespace uvcpp {
         doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
       }
 
+      template <typename U = Derived, typename = typename std::enable_if_t<
+        std::is_base_of<Derived, U>::value, U>>
       static auto create() {
-        using ResourceType = 
-          typename std::enable_if_t<
-          std::is_base_of<Resource<typename Derived::Type, Derived>, Derived>::value, Derived>;
-        return std::make_unique<ResourceType>();
+        return std::make_unique<U>();
       }
 
+      template <typename U = Derived, typename = typename std::enable_if_t<
+        std::is_base_of<Derived, U>::value, U>>
       static auto createShared() {
-        using ResourceType = 
-          typename std::enable_if_t<
-          std::is_base_of<Resource<typename Derived::Type, Derived>, Derived>::value, Derived>;
-        return std::make_shared<ResourceType>();
+        return std::make_shared<U>();
       }
 
     protected:
@@ -140,7 +138,7 @@ namespace uvcpp {
       }
     
     private:
-      Type resource_;
+      T resource_;
       std::vector<std::vector<std::unique_ptr<CallbackInterface>>> callbacks_{};
       std::vector<std::vector<std::unique_ptr<CallbackInterface>>> onceCallbacks_{};
   };
