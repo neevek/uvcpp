@@ -33,8 +33,8 @@ namespace uvcpp {
       }
 
       template <typename U = Derived>
-      static auto create() {
-        auto handle = Resource<T, U>::template create<U>();
+      static auto createUnique() {
+        auto handle = Resource<T, U>::template createUnique<U>();
         return handle->init() ? std::move(handle) : nullptr;
       }
 

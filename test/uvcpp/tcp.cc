@@ -5,8 +5,8 @@
 using namespace uvcpp;
 
 TEST(Tcp, Connection) {
-  auto server = Tcp::create();
-  auto client = Tcp::create();
+  auto server = Tcp::createUnique();
+  auto client = Tcp::createUnique();
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
@@ -96,7 +96,7 @@ TEST(Tcp, Connection) {
 }
 
 TEST(Tcp, TestFail) {
-  auto client = Tcp::create();
+  auto client = Tcp::createUnique();
   ASSERT_TRUE(!!client);
 
   client->once<EvConnect>([](auto e, auto &client) {

@@ -74,7 +74,7 @@ namespace uvcpp {
 
       template <typename U = Derived, typename = typename std::enable_if_t<
         std::is_base_of<Derived, U>::value, U>>
-      static auto create() {
+      static auto createUnique() {
         return std::make_unique<U>();
       }
 

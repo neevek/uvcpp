@@ -4,7 +4,7 @@
 using namespace uvcpp;
 
 TEST(Prepare, LoopCount) {
-  auto prepare = Prepare::create();
+  auto prepare = Prepare::createUnique();
   ASSERT_TRUE(!!prepare);
 
   prepare->on<EvError>([](auto e, auto &prepare) {

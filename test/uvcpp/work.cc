@@ -4,7 +4,7 @@
 using namespace uvcpp;
 
 TEST(Work, Repeat) {
-  auto work = Work::create();
+  auto work = Work::createUnique();
   ASSERT_TRUE(!!work);
 
   work->on<EvError>([](auto e, auto &work) {

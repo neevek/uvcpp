@@ -4,7 +4,7 @@
 using namespace uvcpp;
 
 TEST(Timer, Repeat) {
-  auto timer = Timer::create();
+  auto timer = Timer::createUnique();
   ASSERT_TRUE(!!timer);
 
   timer->on<EvError>([](auto e, auto &timer) {

@@ -133,7 +133,7 @@ namespace uvcpp {
 
     protected:
       virtual void doAccept() override {
-        auto client = Tcp::create();
+        auto client = Tcp::createUnique();
         if (!client) {
           return;
         }
