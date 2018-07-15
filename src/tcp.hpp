@@ -37,7 +37,7 @@ namespace uvcpp {
             return false;
           }
 
-          LOG_D("server binds on: %s:%d", getIP().c_str(), getPort());
+          LOG_D("server bound on: %s:%d", getIP().c_str(), getPort());
           publish<EvBind>(EvBind{});
 
           return true;
@@ -49,7 +49,7 @@ namespace uvcpp {
       void bind(const std::string &host, uint16_t port) {
         SockAddrStorage sas;
         if (NetUtil::convertIPAddress(host, port, &sas)) {
-          LOG_D("will bind on ip address: %s", host.c_str());
+          LOG_D("binding on ip address: %s", host.c_str());
           bind(reinterpret_cast<SockAddr *>(&sas));
           return;
         }
@@ -87,11 +87,11 @@ namespace uvcpp {
 
       void connect(const std::string &host, uint16_t port) {
         if (NetUtil::convertIPAddress(host, port, &sas_)) {
-          LOG_D("will connect to ip address: %s", host.c_str());
+          LOG_D("connecting to ip address: %s", host.c_str());
           connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
-          LOG_E("failed to convert IP address: %s", host.c_str());
+          LOG_E("failed to convert ip address: %s", host.c_str());
           close();
         }
       }
@@ -152,7 +152,7 @@ namespace uvcpp {
           return;
         }
 
-        LOG_V("from client: %s:%d", client->getIP().c_str(), client->getPort());
+        LOG_V("client: %s:%d", client->getIP().c_str(), client->getPort());
         publish<EvAccept<Tcp>>(EvAccept<Tcp>{ std::move(client) });
       }
 
