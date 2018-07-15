@@ -65,7 +65,7 @@ namespace uvcpp {
   class DNSRequest : public Req<uv_getaddrinfo_t, DNSRequest> {
     public:
       using DNSResultVector = std::vector<std::unique_ptr<
-        SockAddrStorage, decltype(CPointerDeleter)>>;
+        SockAddrStorage, CPointerDeleterType>>;
       using DNSRequestCallback = std::function<void(std::unique_ptr<DNSResultVector>)>;
 
       void resolve(

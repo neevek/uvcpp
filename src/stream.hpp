@@ -137,7 +137,7 @@ namespace uvcpp {
       virtual void doAccept() = 0;
 
       static void onAllocCallback(
-          uv_handle_t *handle, size_t size, uv_buf_t *buf) {
+          uv_handle_t *handle, std::size_t size, uv_buf_t *buf) {
         auto st = reinterpret_cast<Stream *>(handle->data);
         buf->base = st->readBuf_;
         buf->len = sizeof(st->readBuf_);

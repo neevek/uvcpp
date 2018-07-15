@@ -8,12 +8,9 @@
 #define UVCPP_LOOP_H_
 #include <uv.h>
 #include <memory> 
+#include <functional>
 
 namespace uvcpp {
-
-  auto LoopDeleter = [](uv_loop_t *p) {
-    uv_loop_delete(p);
-  };
 
   class Loop final {
     public:
@@ -42,8 +39,11 @@ namespace uvcpp {
       ~Loop() = default;
     
     private:
-      std::unique_ptr<uv_loop_t, decltype(LoopDeleter)>
-        loop_{nullptr, LoopDeleter};
+      // cannot use decytype(lambda) because a warning
+      // ref: https://stackoverflow.com/a/40557850/668963
+      using LoopDeleter = std::function<void(uv_loop_t *p)>;
+      std::unique_ptr<uv_loop_t, LoopDeleter>
+        loop_{nullptr, [](uv_loop_t *p) { uv_loop_delete(p); }};
   };
 } /* end of namspace: uvcpp */
 

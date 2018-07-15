@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <memory>
+#include <functional>
 #include <string>
 #include <netdb.h>
 #include <unistd.h>
@@ -17,20 +18,24 @@
 #include "defs.h"
 #include "log/log.h"
 
-namespace uvcpp {
+namespace {
   static const auto CPointerDeleter = [](void *p) { free(p); };
+}
+
+namespace uvcpp {
+  using CPointerDeleterType = std::function<void(void *p)>;
 
   class Util {
     public:
       template <typename T>
       static auto makeCStructUniquePtr() {
-        return std::unique_ptr<T, decltype(CPointerDeleter)>(
+        return std::unique_ptr<T, CPointerDeleterType>(
             reinterpret_cast<T *>(malloc(sizeof(T))), CPointerDeleter);
       }
 
-      static size_t charCount(const std::string &s, char c) {
-        size_t count = 0;
-        for (int i = 0; i < s.size(); ++i) {
+      static std::size_t charCount(const std::string &s, char c) {
+        auto count = 0;
+        for (std::size_t i = 0; i < s.size(); ++i) {
           if (s[i] == c) {
             ++count;
           }
@@ -150,7 +155,7 @@ namespace uvcpp {
       }
 
       static int doSetUID(const char *user) {
-        const size_t pwd_buf_size = 8192;
+        const std::size_t pwd_buf_size = 8192;
         struct passwd pwd, *result;
         char pwd_buf[pwd_buf_size];
         int status = getpwnam_r(user, &pwd, pwd_buf, pwd_buf_size, &result);

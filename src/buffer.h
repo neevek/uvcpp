@@ -12,7 +12,7 @@
 namespace uvcpp {
   class Buffer {
     public:
-      Buffer(size_t capacity) : len_(0), capacity_(capacity) {
+      Buffer(std::size_t capacity) : len_(0), capacity_(capacity) {
         data_ = new char[capacity];
       }
 
@@ -20,7 +20,7 @@ namespace uvcpp {
         delete [] data_;
       }
 
-      void assign(const char *data, size_t len) {
+      void assign(const char *data, std::size_t len) {
         memcpy(data_, data, len);
         len_ = len;
       }
@@ -29,22 +29,22 @@ namespace uvcpp {
         return data_;
       }
 
-      size_t getLength() const {
+      std::size_t getLength() const {
         return len_;
       }
 
-      void setLength(size_t len) {
+      void setLength(std::size_t len) {
         len_ = len;
       }
 
-      size_t getCapacity() const {
+      std::size_t getCapacity() const {
         return capacity_;
       }
 
     private:
       char *data_;
-      size_t len_;
-      size_t capacity_;
+      std::size_t len_;
+      std::size_t capacity_;
   };
 
 } /* end of namspace: uvcpp */
