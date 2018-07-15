@@ -38,8 +38,7 @@ namespace uvcpp {
   template <typename T, typename Derived>
     class Stream : public Handle<T, Derived> {
     public:
-
-      const static auto BUF_SIZE = 4096; 
+      const static auto BUF_SIZE = 8192; 
 
       void listen(int backlog) {
         int err;
