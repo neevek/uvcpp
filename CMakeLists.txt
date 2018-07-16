@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(CONFIGURE_COMMMAND ./autogen.sh && ./configure)
+IF(CMAKE_ANDROID_STANDALONE_TOOLCHAIN)
+  set(CONFIGURE_COMMMAND ${CONFIGURE_COMMMAND}
+    --with-sysroot=${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}
+    --host=arm-linux-androideabi
+    --enable-static
+    --disable-shared
+    )
+ENDIF()
+
 ################################
 #            libuv             #
 ################################
@@ -7,7 +17,7 @@ include(ExternalProject)
 ExternalProject_Add(libuv
   GIT_REPOSITORY "https://github.com/libuv/libuv.git"
   GIT_TAG "v1.x"
-  CONFIGURE_COMMAND ./autogen.sh && ./configure
+  CONFIGURE_COMMAND ${CONFIGURE_COMMMAND}
   BUILD_IN_SOURCE 1
   BUILD_COMMAND $(MAKE)
   INSTALL_COMMAND "" # remove install step
