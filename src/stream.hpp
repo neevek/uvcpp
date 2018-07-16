@@ -124,10 +124,10 @@ namespace uvcpp {
 
         this->template once<EvError>([this](auto e, auto &st){
           if (!pendingReqs_.empty()) {
-            std::for_each(pendingReqs_.begin(), pendingReqs_.end(), [this](auto &r) {
+            for (auto &r : pendingReqs_) {
               this->template publish<EvBufferRecycled>(
                 EvBufferRecycled{ std::move(r->buffer) });
-            });
+            }
           }
         });
         return true;
