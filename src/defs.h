@@ -8,7 +8,7 @@
 #define DEFS_H_
 #include <memory>
 #include <cstdlib>
-#include <uv.h>
+#include "uv.h"
 
 namespace uvcpp {
   #define STRINGIFY(s) #s
