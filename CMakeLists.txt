@@ -15,7 +15,8 @@ ENDIF()
 ################################
 include(ExternalProject)
 ExternalProject_Add(libuv
-  GIT_REPOSITORY "https://github.com/libuv/libuv.git"
+  #GIT_REPOSITORY "https://github.com/libuv/libuv.git"
+  GIT_REPOSITORY "$ENV{HOME}/dev/github/libuv"
   GIT_TAG "v1.x"
   CONFIGURE_COMMAND ${CONFIGURE_COMMMAND}
   BUILD_IN_SOURCE 1
