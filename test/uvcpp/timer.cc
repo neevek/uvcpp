@@ -4,7 +4,10 @@
 using namespace uvcpp;
 
 TEST(Timer, Repeat) {
-  auto timer = Timer::createUnique();
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  auto timer = Timer::createUnique(loop);
   ASSERT_TRUE(!!timer);
 
   timer->on<EvError>([](const auto &e, auto &timer) {
@@ -26,7 +29,7 @@ TEST(Timer, Repeat) {
 
   timer->start(0, 10);
 
-  Loop::get().run();
+  loop.run();
 
   ASSERT_EQ(count, CHECK_COUNT);
 }

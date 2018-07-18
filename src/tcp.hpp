@@ -14,8 +14,10 @@ namespace uvcpp {
 
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
+      Tcp(Loop &loop) : Stream(loop) { }
+
       virtual bool init() override {
-        if (!Stream::init() || uv_tcp_init(Loop::get().getRaw(), get()) != 0) {
+        if (!Stream::init() || uv_tcp_init(this->getLoop().getRaw(), get()) != 0) {
           LOG_E("failed to init Tcp");
           return false;
         }
@@ -55,7 +57,7 @@ namespace uvcpp {
         }
 
         if (!dnsReq_) {
-          dnsReq_ = std::make_unique<DNSRequest>();
+          dnsReq_ = DNSRequest::createUnique(this->getLoop());
         }
         dnsReq_->resolve(host, [this, host, port](auto vec) {
           for (auto &addr : *vec) {
@@ -70,7 +72,7 @@ namespace uvcpp {
 
       bool connect(SockAddr *sa) {
         if (!connectReq_) {
-          connectReq_ = std::make_unique<ConnectReq>();
+          connectReq_ = ConnectReq::createUnique(this->getLoop());
         }
 
         //// the port starts from sa_data
@@ -133,7 +135,7 @@ namespace uvcpp {
 
     protected:
       virtual void doAccept() override {
-        auto client = Tcp::createUnique();
+        auto client = Tcp::createUnique(this->getLoop());
         if (!client) {
           return;
         }

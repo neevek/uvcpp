@@ -4,8 +4,10 @@
 using namespace uvcpp;
 
 TEST(Prepare, LoopCount) {
-  auto prepare = Prepare::createUnique();
-  ASSERT_TRUE(!!prepare);
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  auto prepare = Prepare::createUnique(loop);
 
   prepare->on<EvError>([](const auto &e, auto &prepare) {
     FAIL() << "prepare failed with status: " << e.status;
@@ -26,7 +28,7 @@ TEST(Prepare, LoopCount) {
 
   prepare->start();
 
-  Loop::get().run();
+  loop.run();
 
   ASSERT_EQ(count, CHECK_COUNT);
 }

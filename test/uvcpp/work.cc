@@ -4,7 +4,10 @@
 using namespace uvcpp;
 
 TEST(Work, Repeat) {
-  auto work = Work::createUnique();
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  auto work = Work::createUnique(loop);
   ASSERT_TRUE(!!work);
 
   work->on<EvError>([](const auto &e, auto &work) {
@@ -25,7 +28,7 @@ TEST(Work, Repeat) {
 
   work->start();
 
-  Loop::get().run();
+  loop.run();
 
   ASSERT_EQ(count, CHECK_COUNT);
 }

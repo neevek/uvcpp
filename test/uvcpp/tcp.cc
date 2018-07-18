@@ -5,8 +5,11 @@
 using namespace uvcpp;
 
 TEST(Tcp, Connection) {
-  auto server = Tcp::createUnique();
-  auto client = Tcp::createUnique();
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  auto server = Tcp::createUnique(loop);
+  auto client = Tcp::createUnique(loop);
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
@@ -90,13 +93,16 @@ TEST(Tcp, Connection) {
 
   server->bind("0.0.0.0", 9000);
 
-  Loop::get().run();
+  loop.run();
 
   ASSERT_EQ(writeCount, EXPECTED_WRITE_COUNT);
 }
 
 TEST(Tcp, TestFail) {
-  auto client = Tcp::createUnique();
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  auto client = Tcp::createUnique(loop);
   ASSERT_TRUE(!!client);
 
   client->once<EvConnect>([](const auto &e, auto &client) {
@@ -115,5 +121,5 @@ TEST(Tcp, TestFail) {
 
   client->connect("nonexist", 1234);
 
-  Loop::get().run();
+  loop.run();
 }

@@ -14,36 +14,25 @@ namespace uvcpp {
 
   class Loop final {
     public:
-      static const Loop &get() {
-        static Loop instance{};
-        return instance;
+      bool init() {
+        return uv_loop_init(&loop_) == 0;
       }
 
-      void run() const {
-        uv_run(loop_.get(), UV_RUN_DEFAULT);
+      uv_loop_t *getRaw() {
+        return &loop_;
       }
 
-      uv_loop_t *getRaw() const {
-        return loop_.get();
+      void run() {
+        uv_run(&loop_, UV_RUN_DEFAULT);
       }
 
-      void stop() const {
-        uv_stop(loop_.get());
+      void close() {
+        uv_stop(&loop_);
+        uv_loop_close(&loop_);
       }
-
-    private:
-      Loop() {
-        loop_.reset(uv_default_loop());
-      }
-
-      ~Loop() = default;
     
     private:
-      // cannot use decytype(lambda) because a warning
-      // ref: https://stackoverflow.com/a/40557850/668963
-      using LoopDeleter = std::function<void(uv_loop_t *p)>;
-      std::unique_ptr<uv_loop_t, LoopDeleter>
-        loop_{nullptr, [](uv_loop_t *p) { uv_loop_delete(p); }};
+      uv_loop_t loop_;
   };
 } /* end of namspace: uvcpp */
 

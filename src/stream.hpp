@@ -40,6 +40,7 @@ namespace uvcpp {
     public:
       const static auto BUF_SIZE = 8192; 
 
+      Stream(Loop &loop) : Handle<T, Derived>(loop) { }
       void listen(int backlog) {
         int err;
         if ((err = uv_listen(reinterpret_cast<uv_stream_t *>(this->get()),
@@ -66,7 +67,7 @@ namespace uvcpp {
 
       void shutdown() {
         if (!shutdownReq_) {
-          shutdownReq_ = std::make_unique<ShutdownReq>();
+          shutdownReq_ = ShutdownReq::createUnique(this->getLoop());
         }
 
         int err;
@@ -85,7 +86,7 @@ namespace uvcpp {
       bool writeAsync(std::unique_ptr<Buffer> buffer) {
         auto rawBuffer = buffer.get();
 
-        auto req = std::make_unique<WriteReq>(std::move(buffer));
+        auto req = WriteReq::createUnique(this->getLoop(), std::move(buffer));
         auto rawReq = req->get();
 
         pendingReqs_.push_back(std::move(req));

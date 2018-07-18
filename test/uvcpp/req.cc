@@ -8,7 +8,10 @@ static std::string sasToIP(SockAddrStorage *sas) {
 }
 
 TEST(Req, DNSRequestResolveLocalHost) {
-  DNSRequest req{};
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  DNSRequest req{loop};
   req.on<EvError>([](const auto &e, auto &r) {
     FAIL() << "failed with status: " << e.status;
   });
@@ -22,11 +25,14 @@ TEST(Req, DNSRequestResolveLocalHost) {
     }
   });
 
-  Loop::get().run();
+  loop.run();
 }
 
 TEST(Req, DNSRequest0000) {
-  DNSRequest req{};
+  Loop loop;
+  ASSERT_TRUE(loop.init());
+
+  DNSRequest req{loop};
   req.on<EvError>([](const auto &e, auto &r) {
     FAIL() << "failed with status: " << e.status;
   });
@@ -36,5 +42,5 @@ TEST(Req, DNSRequest0000) {
     ASSERT_STREQ("0.0.0.0", sasToIP(vec->at(0).get()).c_str());
   });
 
-  Loop::get().run();
+  loop.run();
 }
