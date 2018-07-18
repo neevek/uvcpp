@@ -15,7 +15,16 @@
 
 namespace uvcpp {
   struct EvWork : public Event { };
+
   struct EvAfterWork : public Event { };
+
+  struct EvDNSResult : public Event {
+    using DNSResultVector = std::vector<std::unique_ptr<
+      SockAddrStorage, CPointerDeleterType>>;
+    EvDNSResult(DNSResultVector &&dnsResults) :
+      dnsResults(std::move(dnsResults)) { }
+    DNSResultVector dnsResults;
+  };
 
   template <typename T, typename Derived>
   class Req : public Resource<T, Derived> {
@@ -76,16 +85,10 @@ namespace uvcpp {
     public:
       DNSRequest(Loop &loop) : Req(loop) { }
 
-      using DNSResultVector = std::vector<std::unique_ptr<
-        SockAddrStorage, CPointerDeleterType>>;
-      using DNSRequestCallback = std::function<void(std::unique_ptr<DNSResultVector>)>;
-
       void resolve(
           const std::string &host,
-          DNSRequestCallback callback,
           bool ipv4Only = false) {
         host_ = host;
-        callback_ = callback;
 
         struct addrinfo hint;
         memset(&hint, 0, sizeof(hint));
@@ -96,8 +99,8 @@ namespace uvcpp {
         int err;
         if ((err = uv_getaddrinfo(
               getLoop().getRaw(),
-              get(),
-              resolveCallback,
+              this->get(),
+              onResolveCallback,
               host.c_str(),
               nullptr,
               &hint)) != 0) {
@@ -106,7 +109,7 @@ namespace uvcpp {
       }
 
     private:
-      static void resolveCallback(
+      static void onResolveCallback(
           uv_getaddrinfo_t *req, int status, struct addrinfo* res) {
         auto dnsReq = reinterpret_cast<DNSRequest *>(req->data);
         if (status < 0) {
@@ -115,24 +118,19 @@ namespace uvcpp {
           return;
         }
 
-        auto addrVec = std::make_unique<DNSResultVector>();
+        auto addrVec = EvDNSResult::DNSResultVector{};
         for (auto ai = res; ai != nullptr; ai = ai->ai_next) {
           auto addr = Util::makeCStructUniquePtr<SockAddrStorage>();
           NetUtil::copyIPAddress(addr.get(), ai);
-          addrVec->push_back(std::move(addr));
+          addrVec.push_back(std::move(addr));
         }
 
         uv_freeaddrinfo(res);
-        if (addrVec->empty()) {
-          dnsReq->reportError("host does not resolve to any valid IPs", 0);
-        } else {
-          dnsReq->callback_(std::move(addrVec));
-        }
+        dnsReq->template publish<EvDNSResult>(EvDNSResult{ std::move(addrVec) });
       }
 
     private:
       std::string host_;
-      DNSRequestCallback callback_{nullptr};
   };
 
 } /* end of namspace: uvcpp */

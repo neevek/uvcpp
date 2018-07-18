@@ -59,15 +59,18 @@ namespace uvcpp {
         if (!dnsReq_) {
           dnsReq_ = DNSRequest::createUnique(this->getLoop());
         }
-        dnsReq_->resolve(host, [this, host, port](auto vec) {
-          for (auto &addr : *vec) {
+
+        dnsReq_->once<EvDNSResult>([this, host, port](const auto &e, auto &tcp){
+          for (auto &addr : e.dnsResults) {
             if (!this->bind(reinterpret_cast<SockAddr *>(addr.get()))) {
               continue;
             }
             return;
           }
-          LOG_I("failed to bind on %s:%d", host.c_str(), port);
+          LOG_E("failed to bind on %s:%d", host.c_str(), port);
         });
+
+        dnsReq_->resolve(host);
       }
 
       bool connect(SockAddr *sa) {

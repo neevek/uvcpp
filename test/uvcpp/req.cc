@@ -16,14 +16,15 @@ TEST(Req, DNSRequestResolveLocalHost) {
     FAIL() << "failed with status: " << e.status;
   });
 
-  req.resolve("localhost", [](auto vec) {
-    ASSERT_GT(vec->size(), 0);
-    for (auto &sas : *vec) {
+  req.once<EvDNSResult>([](const auto &e, auto &tcp) {
+    ASSERT_GT(e.dnsResults.size(), 0);
+    for (auto &sas : e.dnsResults) {
       auto result = "::1" == sasToIP(sas.get()) ||
         "127.0.0.1" == sasToIP(sas.get());
       ASSERT_TRUE(result);
     }
   });
+  req.resolve("localhost");
 
   loop.run();
 }
@@ -37,10 +38,11 @@ TEST(Req, DNSRequest0000) {
     FAIL() << "failed with status: " << e.status;
   });
 
-  req.resolve("0.0.0.0", [](auto vec) {
-    ASSERT_EQ(vec->size(), 1);
-    ASSERT_STREQ("0.0.0.0", sasToIP(vec->at(0).get()).c_str());
+  req.once<EvDNSResult>([](const auto &e, auto &tcp) {
+    ASSERT_EQ(e.dnsResults.size(), 1);
+    ASSERT_STREQ("0.0.0.0", sasToIP(e.dnsResults[0].get()).c_str());
   });
+  req.resolve("0.0.0.0");
 
   loop.run();
 }
