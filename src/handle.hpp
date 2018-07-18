@@ -26,7 +26,7 @@ namespace uvcpp {
       }
 
       virtual bool init() {
-        this->template once<EvError>([this](auto e, auto &handle){
+        this->template once<EvError>([this](const auto &e, auto &handle){
           this->close();
         });
         return true;

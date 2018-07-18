@@ -10,13 +10,13 @@ TEST(Tcp, Connection) {
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
-  server->on<EvError>([](auto e, auto &tcp) {
+  server->on<EvError>([](const auto &e, auto &tcp) {
     FAIL() << "server failed with status: " << e.status;
   });
-  client->on<EvError>([](auto e, auto &tcp) {
+  client->on<EvError>([](const auto &e, auto &tcp) {
     FAIL() << "client failed with status: " << e.status;
   });
-  client->on<EvClose>([](auto e, auto &handle) {
+  client->on<EvClose>([](const auto &e, auto &handle) {
     LOG_D("client closed: isValid=%d", handle.isValid());
   });
 
@@ -25,25 +25,25 @@ TEST(Tcp, Connection) {
 
   std::shared_ptr<Tcp> acceptedClient;
 
-  server->on<EvBind>([&client](auto e, auto &server) {
+  server->on<EvBind>([&client](const auto &e, auto &server) {
     server.listen(50);
     client->connect("127.0.0.1", 9000);
   });
 
-  server->on<EvAccept<Tcp>>([&](auto e, auto &server) {
+  server->on<EvAccept<Tcp>>([&](const auto &e, auto &server) {
     auto buf = std::make_unique<Buffer>(serverMsg.size() + 1);
     buf->assign(serverMsg.c_str(), serverMsg.size());
     if (!e.client->writeAsync(std::move(buf))) {
       return;
     }
 
-    e.client->template on<EvShutdown>([&](auto e, auto &client) {
+    e.client->template on<EvShutdown>([&](const auto &e, auto &client) {
       LOG_D("received client shutdown");
     });
     e.client->shutdown();
 
     e.client->readStart();
-    e.client->template on<EvRead>([&](auto e, auto &client) {
+    e.client->template on<EvRead>([&](const auto &e, auto &client) {
       ((char *)e.buf)[e.nread] = '\0';
       ASSERT_STREQ(clientMsg.c_str(), e.buf);
 
@@ -51,16 +51,16 @@ TEST(Tcp, Connection) {
 
       acceptedClient->close();
     });
-    acceptedClient = std::move(e.client);
+    acceptedClient = std::move(const_cast<EvAccept<Tcp> &>(e).client);
   });
 
   const int EXPECTED_WRITE_COUNT = 1;
   int writeCount = 0;
-  client->on<EvConnect>([&clientMsg, &writeCount](auto e, auto &client) {
-    client.template on<EvBufferRecycled>([&](auto e, auto &client) {
+  client->on<EvConnect>([&clientMsg, &writeCount](const auto &e, auto &client) {
+    client.template on<EvBufferRecycled>([&](const auto &e, auto &client) {
       LOG_D("buffer recycled: %p", e.buffer.get());
     });
-    client.template once<EvWrite>([&](auto e, auto &client) {
+    client.template once<EvWrite>([&](const auto &e, auto &client) {
       ++writeCount;
     });
 
@@ -70,7 +70,7 @@ TEST(Tcp, Connection) {
       return;
     }
 
-    client.template on<EvShutdown>([&](auto e, auto &client) {
+    client.template on<EvShutdown>([&](const auto &e, auto &client) {
       LOG_D("client shutdown");
     });
     client.shutdown();
@@ -78,7 +78,7 @@ TEST(Tcp, Connection) {
     client.readStart();
   });
 
-  client->on<EvRead>([&](auto e, auto &client){
+  client->on<EvRead>([&](const auto &e, auto &client){
     ((char *)e.buf)[e.nread] = '\0';
     ASSERT_STREQ(serverMsg.c_str(), e.buf);
 
@@ -99,17 +99,17 @@ TEST(Tcp, TestFail) {
   auto client = Tcp::createUnique();
   ASSERT_TRUE(!!client);
 
-  client->once<EvConnect>([](auto e, auto &client) {
+  client->once<EvConnect>([](const auto &e, auto &client) {
     // will no reach here
     FAIL();
   });
 
-  client->on<EvRead>([&](auto e, auto &client){
+  client->on<EvRead>([&](const auto &e, auto &client){
     // will no reach here
     FAIL();
   });
 
-  client->on<EvError>([&](auto e, auto &client){
+  client->on<EvError>([&](const auto &e, auto &client){
     client.close();
   });
 

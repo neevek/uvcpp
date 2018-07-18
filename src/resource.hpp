@@ -24,7 +24,7 @@ namespace uvcpp {
   };
 
   template <typename E, typename Derived>
-  using EventCallback = std::function<void(E event, Derived &handle)>;
+  using EventCallback = std::function<void(const E &event, Derived &handle)>;
 
   struct CallbackInterface { };
 

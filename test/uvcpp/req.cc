@@ -9,7 +9,7 @@ static std::string sasToIP(SockAddrStorage *sas) {
 
 TEST(Req, DNSRequestResolveLocalHost) {
   DNSRequest req{};
-  req.on<EvError>([](auto e, auto &r) {
+  req.on<EvError>([](const auto &e, auto &r) {
     FAIL() << "failed with status: " << e.status;
   });
 
@@ -27,7 +27,7 @@ TEST(Req, DNSRequestResolveLocalHost) {
 
 TEST(Req, DNSRequest0000) {
   DNSRequest req{};
-  req.on<EvError>([](auto e, auto &r) {
+  req.on<EvError>([](const auto &e, auto &r) {
     FAIL() << "failed with status: " << e.status;
   });
 

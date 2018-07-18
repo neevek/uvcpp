@@ -7,16 +7,16 @@ TEST(Prepare, LoopCount) {
   auto prepare = Prepare::createUnique();
   ASSERT_TRUE(!!prepare);
 
-  prepare->on<EvError>([](auto e, auto &prepare) {
+  prepare->on<EvError>([](const auto &e, auto &prepare) {
     FAIL() << "prepare failed with status: " << e.status;
   });
-  prepare->on<EvClose>([](auto e, auto &prepare) {
+  prepare->on<EvClose>([](const auto &e, auto &prepare) {
     LOG_D("prepare closed");
   });
 
   const auto CHECK_COUNT = 1;
   auto count = 0;
-  prepare->on<EvPrepare>([&count](auto e, auto &prepare) {
+  prepare->on<EvPrepare>([&count](const auto &e, auto &prepare) {
     LOG_D("counting: %d", count);
     if (++count == CHECK_COUNT) {
       prepare.stop();

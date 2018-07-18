@@ -122,7 +122,7 @@ namespace uvcpp {
           return false;
         }
 
-        this->template once<EvError>([this](auto e, auto &st){
+        this->template once<EvError>([this](const auto &e, auto &st){
           if (!pendingReqs_.empty()) {
             for (auto &r : pendingReqs_) {
               this->template publish<EvBufferRecycled>(

@@ -7,19 +7,19 @@ TEST(Work, Repeat) {
   auto work = Work::createUnique();
   ASSERT_TRUE(!!work);
 
-  work->on<EvError>([](auto e, auto &work) {
+  work->on<EvError>([](const auto &e, auto &work) {
     FAIL() << "work failed with status: " << e.status;
   });
-  work->on<EvClose>([](auto e, auto &work) {
+  work->on<EvClose>([](const auto &e, auto &work) {
     LOG_D("work closed");
   });
 
   const auto CHECK_COUNT = 2;
   auto count = 0;
-  work->on<EvWork>([&count](auto e, auto &work) {
+  work->on<EvWork>([&count](const auto &e, auto &work) {
     ++count;
   });
-  work->on<EvAfterWork>([&count](auto e, auto &work) {
+  work->on<EvAfterWork>([&count](const auto &e, auto &work) {
     ++count;
   });
 
