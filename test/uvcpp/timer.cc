@@ -4,8 +4,8 @@
 using namespace uvcpp;
 
 TEST(Timer, Repeat) {
-  Loop loop;
-  ASSERT_TRUE(loop.init());
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
 
   auto timer = Timer::createUnique(loop);
   ASSERT_TRUE(!!timer);
@@ -29,7 +29,7 @@ TEST(Timer, Repeat) {
 
   timer->start(0, 10);
 
-  loop.run();
+  loop->run();
 
   ASSERT_EQ(count, CHECK_COUNT);
 }

@@ -15,7 +15,7 @@ namespace uvcpp {
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
     public:
-      Handle(Loop &loop) : Resource<T, Derived>(loop) { }
+      Handle(const std::shared_ptr<Loop> &loop) : Resource<T, Derived>(loop) { }
 
       void close() {
         if (!uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get()))) {
@@ -35,14 +35,14 @@ namespace uvcpp {
       }
 
       template <typename U = Derived, typename ...Args>
-      static auto createUnique(Loop &loop, Args ...args) {
+      static auto createUnique(const std::shared_ptr<Loop> &loop, Args ...args) {
         auto handle = Resource<T, U>::template
           createUnique<U, Args...>(loop, std::forward<Args>(args)...);
         return handle->init() ? std::move(handle) : nullptr;
       }
 
       template <typename U = Derived, typename ...Args>
-      static auto createShared(Loop &loop, Args ...args) {
+      static auto createShared(const std::shared_ptr<Loop> &loop, Args ...args) {
         auto handle = Resource<T, U>::template
           createShared<U, Args...>(loop, std::forward<Args>(args)...);
         return handle->init() ? handle : nullptr;

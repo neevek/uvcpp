@@ -29,7 +29,7 @@ namespace uvcpp {
   template <typename T, typename Derived>
   class Req : public Resource<T, Derived> {
     public:
-      Req(Loop &loop) : Resource<T, Derived>(loop) { }
+      Req(const std::shared_ptr<Loop> &loop) : Resource<T, Derived>(loop) { }
       void cancel() {
         int err;
         if ((err = uv_cancel(reinterpret_cast<uv_req_t *>(this->get()))) < 0) {
@@ -40,29 +40,29 @@ namespace uvcpp {
 
   class WriteReq : public Req<uv_write_t, WriteReq> {
     public:
-      WriteReq(Loop &loop, std::unique_ptr<Buffer> buffer) :
+      WriteReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<Buffer> buffer) :
         Req(loop), buffer(std::move(buffer)) { }
       std::unique_ptr<Buffer> buffer;
   };
 
   class ConnectReq : public Req<uv_connect_t, ConnectReq> {
     public:
-      ConnectReq(Loop &loop) : Req(loop) { }
+      ConnectReq(const std::shared_ptr<Loop> &loop) : Req(loop) { }
   };
 
   class ShutdownReq : public Req<uv_shutdown_t, ShutdownReq> {
     public:
-      ShutdownReq(Loop &loop) : Req(loop) { }
+      ShutdownReq(const std::shared_ptr<Loop> &loop) : Req(loop) { }
   };
 
   class Work : public Req<uv_work_t, Work> {
     public:
-      Work(Loop &loop) : Req(loop) { }
+      Work(const std::shared_ptr<Loop> &loop) : Req(loop) { }
 
       void start() {
         int err;
         if ((err = uv_queue_work(
-              this->getLoop().getRaw(),
+              this->getLoop()->getRaw(),
               reinterpret_cast<uv_work_t *>(this->get()),
               onWorkCallback, onAfterWorkCallback)) != 0) {
           this->reportError("uv_queue_work", err);
@@ -83,7 +83,7 @@ namespace uvcpp {
 
   class DNSRequest : public Req<uv_getaddrinfo_t, DNSRequest> {
     public:
-      DNSRequest(Loop &loop) : Req(loop) { }
+      DNSRequest(const std::shared_ptr<Loop> &loop) : Req(loop) { }
 
       void resolve(
           const std::string &host,
@@ -98,7 +98,7 @@ namespace uvcpp {
 
         int err;
         if ((err = uv_getaddrinfo(
-              getLoop().getRaw(),
+              getLoop()->getRaw(),
               this->get(),
               onResolveCallback,
               host.c_str(),

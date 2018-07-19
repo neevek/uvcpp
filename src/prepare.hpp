@@ -13,10 +13,10 @@ namespace uvcpp {
 
   class Prepare : public Handle<uv_prepare_t, Prepare> {
     public:
-      Prepare(Loop &loop) : Handle(loop) { }
+      Prepare(const std::shared_ptr<Loop> &loop) : Handle(loop) { }
 
       virtual bool init() override {
-        if (uv_prepare_init(this->getLoop().getRaw(), get()) != 0) {
+        if (uv_prepare_init(this->getLoop()->getRaw(), get()) != 0) {
           LOG_E("uv_prepare_init failed");
           return false;
         }

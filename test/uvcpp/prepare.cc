@@ -4,8 +4,8 @@
 using namespace uvcpp;
 
 TEST(Prepare, LoopCount) {
-  Loop loop;
-  ASSERT_TRUE(loop.init());
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
 
   auto prepare = Prepare::createUnique(loop);
 
@@ -28,7 +28,7 @@ TEST(Prepare, LoopCount) {
 
   prepare->start();
 
-  loop.run();
+  loop->run();
 
   ASSERT_EQ(count, CHECK_COUNT);
 }

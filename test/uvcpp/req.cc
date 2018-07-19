@@ -8,8 +8,8 @@ static std::string sasToIP(SockAddrStorage *sas) {
 }
 
 TEST(Req, DNSRequestResolveLocalHost) {
-  Loop loop;
-  ASSERT_TRUE(loop.init());
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
 
   DNSRequest req{loop};
   req.on<EvError>([](const auto &e, auto &r) {
@@ -26,12 +26,12 @@ TEST(Req, DNSRequestResolveLocalHost) {
   });
   req.resolve("localhost");
 
-  loop.run();
+  loop->run();
 }
 
 TEST(Req, DNSRequest0000) {
-  Loop loop;
-  ASSERT_TRUE(loop.init());
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
 
   DNSRequest req{loop};
   req.on<EvError>([](const auto &e, auto &r) {
@@ -44,5 +44,5 @@ TEST(Req, DNSRequest0000) {
   });
   req.resolve("0.0.0.0");
 
-  loop.run();
+  loop->run();
 }

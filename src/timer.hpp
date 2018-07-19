@@ -13,10 +13,10 @@ namespace uvcpp {
 
   class Timer : public Handle<uv_timer_t, Timer> {
     public:
-      Timer(Loop &loop) : Handle(loop) { }
+      Timer(const std::shared_ptr<Loop> &loop) : Handle(loop) { }
 
       virtual bool init() override {
-        if (uv_timer_init(this->getLoop().getRaw(), get()) != 0) {
+        if (uv_timer_init(this->getLoop()->getRaw(), get()) != 0) {
           LOG_E("uv_timer_init failed");
           return false;
         }

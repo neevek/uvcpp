@@ -14,10 +14,10 @@ namespace uvcpp {
 
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
-      Tcp(Loop &loop) : Stream(loop) { }
+      Tcp(const std::shared_ptr<Loop> &loop) : Stream(loop) { }
 
       virtual bool init() override {
-        if (!Stream::init() || uv_tcp_init(this->getLoop().getRaw(), get()) != 0) {
+        if (!Stream::init() || uv_tcp_init(this->getLoop()->getRaw(), get()) != 0) {
           LOG_E("failed to init Tcp");
           return false;
         }

@@ -43,7 +43,7 @@ namespace uvcpp {
 
     public:
       using Type = T;
-      explicit Resource(Loop &loop) : loop_(loop) {
+      explicit Resource(const std::shared_ptr<Loop> &loop) : loop_(loop) {
         resource_.data = this;
       }
       virtual ~Resource() = default;
@@ -54,7 +54,7 @@ namespace uvcpp {
         return &resource_;
       }
 
-      Loop &getLoop() {
+      std::shared_ptr<Loop> getLoop() {
         return loop_;
       }
 
@@ -78,13 +78,13 @@ namespace uvcpp {
 
       template <typename U = Derived, typename ...Args, typename =
         std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
-      static auto createUnique(Loop &loop, Args ...args) {
+      static auto createUnique(const std::shared_ptr<Loop> &loop, Args ...args) {
         return std::make_unique<U>(loop, std::forward<Args>(args)...);
       }
 
       template <typename U = Derived, typename ...Args, typename =
         std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
-      static auto createShared(Loop &loop, Args ...args) {
+      static auto createShared(const std::shared_ptr<Loop> &loop, Args ...args) {
         return std::make_shared<U>(loop, std::forward<Args>(args)...);
       }
 
@@ -141,7 +141,7 @@ namespace uvcpp {
       }
     
     private:
-      Loop &loop_;
+      std::shared_ptr<Loop> loop_;
       T resource_;
       std::vector<std::vector<std::unique_ptr<CallbackInterface>>> callbacks_{};
       std::vector<std::vector<std::unique_ptr<CallbackInterface>>> onceCallbacks_{};

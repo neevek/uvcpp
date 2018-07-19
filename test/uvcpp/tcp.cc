@@ -5,8 +5,8 @@
 using namespace uvcpp;
 
 TEST(Tcp, Connection) {
-  Loop loop;
-  ASSERT_TRUE(loop.init());
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
 
   auto server = Tcp::createUnique(loop);
   auto client = Tcp::createUnique(loop);
@@ -93,14 +93,14 @@ TEST(Tcp, Connection) {
 
   server->bind("0.0.0.0", 9000);
 
-  loop.run();
+  loop->run();
 
   ASSERT_EQ(writeCount, EXPECTED_WRITE_COUNT);
 }
 
 TEST(Tcp, TestFail) {
-  Loop loop;
-  ASSERT_TRUE(loop.init());
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
 
   auto client = Tcp::createUnique(loop);
   ASSERT_TRUE(!!client);
@@ -121,5 +121,5 @@ TEST(Tcp, TestFail) {
 
   client->connect("nonexist", 1234);
 
-  loop.run();
+  loop->run();
 }
