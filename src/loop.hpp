@@ -9,11 +9,16 @@
 #include <uv.h>
 #include <memory> 
 #include <functional>
+#include "log/log.h"
 
 namespace uvcpp {
 
   class Loop final {
     public:
+      ~Loop() {
+        uv_loop_close(&loop_);
+      }
+
       bool init() {
         return uv_loop_init(&loop_) == 0;
       }
@@ -26,9 +31,8 @@ namespace uvcpp {
         uv_run(&loop_, UV_RUN_DEFAULT);
       }
 
-      void close() {
+      void stop() {
         uv_stop(&loop_);
-        uv_loop_close(&loop_);
       }
     
     private:
