@@ -34,12 +34,12 @@ namespace uvcpp {
 
           int err;
           if ((err = uv_tcp_bind(get(), sa, 0)) != 0) {
-            LOG_W("cannot bind on %s:%d, reason: %s",
+            LOG_W("failed to bind on %s:%d, reason: %s",
                 getIP().c_str(), getPort(), uv_strerror(err));
             return false;
           }
 
-          LOG_D("server bound on: %s:%d", getIP().c_str(), getPort());
+          LOG_D("bound on: %s:%d", getIP().c_str(), getPort());
           publish<EvBind>(EvBind{});
 
           return true;
@@ -48,12 +48,10 @@ namespace uvcpp {
         return false;
       }
 
-      void bind(const std::string &host, uint16_t port) {
+      bool bind(const std::string &host, uint16_t port) {
         SockAddrStorage sas;
         if (NetUtil::convertIPAddress(host, port, &sas)) {
-          LOG_D("binding on ip address: %s", host.c_str());
-          bind(reinterpret_cast<SockAddr *>(&sas));
-          return;
+          return bind(reinterpret_cast<SockAddr *>(&sas));
         }
 
         if (!dnsReq_) {
@@ -71,6 +69,7 @@ namespace uvcpp {
         });
 
         dnsReq_->resolve(host);
+        return true;
       }
 
       bool connect(SockAddr *sa) {
