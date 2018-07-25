@@ -48,9 +48,9 @@ namespace uvcpp {
         return false;
       }
 
-      bool bind(const std::string &host, uint16_t port) {
+      bool bind(const std::string &addr, uint16_t port) {
         SockAddrStorage sas;
-        if (NetUtil::convertIPAddress(host, port, &sas)) {
+        if (NetUtil::convertIPAddress(addr, port, &sas)) {
           return bind(reinterpret_cast<SockAddr *>(&sas));
         }
 
@@ -58,17 +58,17 @@ namespace uvcpp {
           dnsReq_ = DNSRequest::createUnique(this->getLoop());
         }
 
-        dnsReq_->once<EvDNSResult>([this, host, port](const auto &e, auto &tcp){
+        dnsReq_->once<EvDNSResult>([this, addr, port](const auto &e, auto &tcp){
           for (auto &addr : e.dnsResults) {
             if (!this->bind(reinterpret_cast<SockAddr *>(addr.get()))) {
               continue;
             }
             return;
           }
-          LOG_E("failed to bind on %s:%d", host.c_str(), port);
+          LOG_E("failed to bind on %s:%d", addr.c_str(), port);
         });
 
-        dnsReq_->resolve(host);
+        dnsReq_->resolve(addr);
         return true;
       }
 
@@ -76,6 +76,9 @@ namespace uvcpp {
         if (!connectReq_) {
           connectReq_ = ConnectReq::createUnique(this->getLoop());
         }
+
+        memcpy(&sas_, sa, sa->sa_family == AF_INET ?
+               sizeof(SockAddr4) : sizeof(SockAddr6));
 
         //// the port starts from sa_data
         //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
@@ -89,13 +92,13 @@ namespace uvcpp {
         return true;
       }
 
-      void connect(const std::string &host, uint16_t port) {
-        if (NetUtil::convertIPAddress(host, port, &sas_)) {
-          LOG_D("connecting to ip address: %s", host.c_str());
+      void connect(const std::string &ip, uint16_t port) {
+        if (NetUtil::convertIPAddress(ip, port, &sas_)) {
+          LOG_D("connecting to ip address: %s", ip.c_str());
           connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
-          LOG_E("failed to convert ip address: %s", host.c_str());
+          LOG_E("[%s] is not a valid ip address", ip.c_str());
           close();
         }
       }
@@ -174,8 +177,6 @@ namespace uvcpp {
       std::unique_ptr<DNSRequest> dnsReq_{nullptr};
       std::unique_ptr<ConnectReq> connectReq_{nullptr};
       SockAddrStorage sas_;
-
-      std::string setuid_;
   };
 } /* end of namspace: uvcpp */
 

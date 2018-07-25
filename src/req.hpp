@@ -86,9 +86,9 @@ namespace uvcpp {
       DNSRequest(const std::shared_ptr<Loop> &loop) : Req(loop) { }
 
       void resolve(
-          const std::string &host,
+          const std::string &addr,
           bool ipv4Only = false) {
-        host_ = host;
+        addr_ = addr;
 
         struct addrinfo hint;
         memset(&hint, 0, sizeof(hint));
@@ -101,7 +101,7 @@ namespace uvcpp {
               getLoop()->getRaw(),
               this->get(),
               onResolveCallback,
-              host.c_str(),
+              addr.c_str(),
               nullptr,
               &hint)) != 0) {
           this->reportError("uv_getaddrinfo", err);
@@ -113,7 +113,7 @@ namespace uvcpp {
           uv_getaddrinfo_t *req, int status, struct addrinfo* res) {
         auto dnsReq = reinterpret_cast<DNSRequest *>(req->data);
         if (status < 0) {
-          LOG_E("getaddrinfo(\"%s\"): %s", dnsReq->host_.c_str(), uv_strerror(status));
+          LOG_E("getaddrinfo(\"%s\"): %s", dnsReq->addr_.c_str(), uv_strerror(status));
           uv_freeaddrinfo(res);
           return;
         }
@@ -130,7 +130,7 @@ namespace uvcpp {
       }
 
     private:
-      std::string host_;
+      std::string addr_;
   };
 
 } /* end of namspace: uvcpp */
