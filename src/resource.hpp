@@ -18,6 +18,7 @@
 namespace uvcpp {
 
   struct Event { };
+  struct EvDestroy : public Event { };
   struct EvError : public Event {
     EvError(int status) : status(status) { }
     int status;
@@ -46,7 +47,9 @@ namespace uvcpp {
       explicit Resource(const std::shared_ptr<Loop> &loop) : loop_(loop) {
         resource_.data = this;
       }
-      virtual ~Resource() = default;
+      virtual ~Resource() {
+        publish(EvDestroy{});
+      }
       Resource &&operator=(const Resource &) = delete;
       Resource &&operator=(const Resource &&) = delete;
 

@@ -16,6 +16,9 @@ TEST(Timer, Repeat) {
   timer->on<EvClose>([](const auto &e, auto &timer) {
     LOG_D("timer closed");
   });
+  timer->once<EvDestroy>([](const auto &e, auto &timer) {
+    LOG_D("timer destroyed");
+  });
 
   const auto CHECK_COUNT = 5;
   auto count = 0;
