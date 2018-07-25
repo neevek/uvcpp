@@ -10,8 +10,6 @@
 
 namespace uvcpp {
 
-  struct EvClose : public Event { };
-
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
     public:

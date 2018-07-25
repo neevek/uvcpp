@@ -37,3 +37,42 @@ TEST(Timer, Repeat) {
   ASSERT_EQ(count, CHECK_COUNT);
 }
 
+TEST(Timer, RepeatShared) {
+  auto destroyed = false;
+  {
+    auto loop = std::make_shared<Loop>();
+    ASSERT_TRUE(loop->init());
+
+    auto timer = Timer::createShared(loop);
+    ASSERT_TRUE(!!timer);
+
+    timer->on<EvError>([](const auto &e, auto &timer) {
+      FAIL() << "timer failed with status: " << e.status;
+    });
+    // intentionally capture the shared_ptr to produce shared_ptr reference
+    // cycle, but this callback will be registered as ONCE callback even
+    // though 'on<>' instead of 'once<>' is used, when it is called,
+    // the callback itself gets deleted, so the Timer object will be released,
+    // and EvDestroy event will be fired
+    timer->on<EvClose>([sharedTimer = timer](const auto &e, auto &timer) {
+      LOG_D("timer closed");
+    });
+    timer->once<EvDestroy>([&destroyed](const auto &e, auto &timer) {
+      LOG_D("timer destroyed");
+      destroyed = true;
+    });
+
+    auto count = 0;
+    timer->on<EvTimer>([&count](const auto &e, auto &timer) {
+      timer.stop();
+      timer.close();
+    });
+
+    timer->start(10, 0);
+
+    loop->run();
+  }
+
+  ASSERT_TRUE(destroyed);
+}
+

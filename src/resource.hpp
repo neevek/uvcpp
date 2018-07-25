@@ -18,6 +18,7 @@
 namespace uvcpp {
 
   struct Event { };
+  struct EvClose : public Event { };
   struct EvDestroy : public Event { };
   struct EvError : public Event {
     EvError(int status) : status(status) { }
@@ -63,7 +64,14 @@ namespace uvcpp {
 
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void on(EventCallback<E, Derived> &&callback) {
-        registerCallback<E, CallbackType::ALWAYS>(
+        const auto cbType =
+          (std::is_same<E, EvClose>::value ||
+           std::is_same<E, EvError>::value ||
+           std::is_same<E, EvDestroy>::value) ?
+          CallbackType::ONCE :
+          CallbackType::ALWAYS;
+
+        registerCallback<E, cbType>(
           std::forward<EventCallback<E, Derived>>(callback));
       }
 
