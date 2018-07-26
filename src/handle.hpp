@@ -34,6 +34,10 @@ namespace uvcpp {
         return true;
       }
 
+      void refUntilBeingClosed(const std::shared_ptr<Derived> &ptr) {
+        this->template once<EvClose>([ptr](const auto &, auto &){ });
+      }
+
       template<typename E>
       void on(EventCallback<E, Derived> &&callback) {
         if (std::is_same<E, EvClose>::value) {

@@ -20,6 +20,7 @@ namespace uvcpp {
   struct Event {
     virtual ~Event() { }
   };
+  struct EvRef : public Event { };
   struct EvDestroy : public Event { };
   struct EvError : public Event {
     EvError(int status) : status(status) { }
@@ -65,10 +66,23 @@ namespace uvcpp {
         return loop_;
       }
 
+      /**
+       * keeps a ref to the shared_ptr, calling unrefAll() to unref all
+       * shared_ptrs kept by this Resource object
+       */
+      void ref(const std::shared_ptr<Derived> &ptr) {
+        registerCallback<EvRef, CallbackType::ONCE>([ptr](const auto &, auto &){});
+      }
+
+      void unrefAll() {
+        publish(EvRef{});
+      }
+
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void on(EventCallback<E, Derived> &&callback) {
         const auto cbType =
           (std::is_same<E, EvError>::value ||
+           std::is_same<E, EvRef>::value ||
            std::is_same<E, EvDestroy>::value) ?
           CallbackType::ONCE :
           CallbackType::ALWAYS;
