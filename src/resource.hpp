@@ -17,7 +17,9 @@
 
 namespace uvcpp {
 
-  struct Event { };
+  struct Event {
+    virtual ~Event() { }
+  };
   struct EvClose : public Event { };
   struct EvDestroy : public Event { };
   struct EvError : public Event {
@@ -28,7 +30,9 @@ namespace uvcpp {
   template <typename E, typename Derived>
   using EventCallback = std::function<void(const E &event, Derived &handle)>;
 
-  struct CallbackInterface { };
+  struct CallbackInterface {
+    virtual ~CallbackInterface() { }
+  };
 
   template <typename E, typename Derived>
   struct Callback : public CallbackInterface {

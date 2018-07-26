@@ -15,7 +15,7 @@ namespace uvcpp {
 
   class Loop final {
     public:
-      ~Loop() {
+      virtual ~Loop() {
         uv_loop_close(&loop_);
       }
 
