@@ -124,19 +124,19 @@ namespace uvcpp {
         }
       }
 
-      static void copy_ipv4_addr(uint32_t *intip, const char *ip) {
+      static void toBinaryIPv4(uint32_t *intip, const char *ip) {
         *intip = (ip[0] << 24) + (ip[1] << 16) + (ip[2] << 8) + ip[3];
       }
 
-      static int is_ipv4_addr_any(const char *ip) {
+      static int isIPv4Any(const char *ip) {
         return ip[0] == 0 && ip[1] == 0 && ip[2] == 0 && ip[3] == 0;
       }
 
-      static int is_ipv4_addr_local(const char *ip) {
+      static int isIPv4Local(const char *ip) {
         return ip[0] == 127 && ip[1] == 0 && ip[2] == 0 && ip[3] == 1;
       }
 
-      static int is_ipv6_addr_any(const char *ip) {
+      static int isIPv6Any(const char *ip) {
         for (int i = 0; i < 16; ++i) {
           if (ip[i] != 0) { 
             return 0;
@@ -145,7 +145,7 @@ namespace uvcpp {
         return 1;
       }
 
-      static int is_ipv6_addr_local(const char *ip) {
+      static int isIPv6Local(const char *ip) {
         for (int i = 0; i < 15; ++i) {
           if (ip[i] != 0) {
             return 0;

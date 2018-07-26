@@ -130,6 +130,10 @@ namespace uvcpp {
         }
       }
 
+      const SockAddr *getSockAddr() const {
+        return reinterpret_cast<const SockAddr *>(&sas_);
+      }
+
       std::string getIP() {
         return NetUtil::ip(reinterpret_cast<SockAddr *>(&sas_));
       }
