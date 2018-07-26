@@ -92,14 +92,14 @@ namespace uvcpp {
         return true;
       }
 
-      void connect(const std::string &ip, uint16_t port) {
+      bool connect(const std::string &ip, uint16_t port) {
         if (NetUtil::convertIPAddress(ip, port, &sas_)) {
           LOG_D("connecting to ip address: %s", ip.c_str());
-          connect(reinterpret_cast<SockAddr *>(&sas_));
+          return connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
           LOG_E("[%s] is not a valid ip address", ip.c_str());
-          close();
+          return false;
         }
       }
 
