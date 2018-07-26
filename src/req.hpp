@@ -19,8 +19,7 @@ namespace uvcpp {
   struct EvAfterWork : public Event { };
 
   struct EvDNSResult : public Event {
-    using DNSResultVector = std::vector<std::unique_ptr<
-      SockAddrStorage, CPointerDeleterType>>;
+    using DNSResultVector = std::vector<std::string>;
     EvDNSResult(DNSResultVector &&dnsResults) :
       dnsResults(std::move(dnsResults)) { }
     DNSResultVector dnsResults;
@@ -113,20 +112,24 @@ namespace uvcpp {
           uv_getaddrinfo_t *req, int status, struct addrinfo* res) {
         auto dnsReq = reinterpret_cast<DNSRequest *>(req->data);
         if (status < 0) {
-          LOG_E("getaddrinfo(\"%s\"): %s", dnsReq->addr_.c_str(), uv_strerror(status));
+          LOG_E("getaddrinfo(\"%s\"): %s",
+                dnsReq->addr_.c_str(), uv_strerror(status));
           uv_freeaddrinfo(res);
+          dnsReq->reportError("resolve failed", status);
           return;
         }
 
         auto addrVec = EvDNSResult::DNSResultVector{};
         for (auto ai = res; ai != nullptr; ai = ai->ai_next) {
-          auto addr = Util::makeCStructUniquePtr<SockAddrStorage>();
-          NetUtil::copyIPAddress(addr.get(), ai);
-          addrVec.push_back(std::move(addr));
+          auto ip = NetUtil::ip(ai->ai_addr);
+          if (!ip.empty()) {
+            addrVec.emplace_back(ip);
+          }
         }
 
         uv_freeaddrinfo(res);
-        dnsReq->template publish<EvDNSResult>(EvDNSResult{ std::move(addrVec) });
+        dnsReq->template
+          publish<EvDNSResult>(EvDNSResult{ std::move(addrVec) });
       }
 
     private:

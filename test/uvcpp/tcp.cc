@@ -42,7 +42,7 @@ TEST(Tcp, Connection) {
 
     server->on<EvBind>([&client](const auto &e, auto &server) {
       server.listen(50);
-      client->connect("127.0.0.1", 9000);
+      client->connect(server.getIP(), 9000);
     });
 
     server->on<EvAccept<Tcp>>([&](const auto &e, auto &server) {
@@ -104,7 +104,7 @@ TEST(Tcp, Connection) {
       server->close();
     });
 
-    server->bind("0.0.0.0", 9000);
+    server->bind("localhost", 9000);
 
     loop->run();
   }

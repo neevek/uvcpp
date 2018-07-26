@@ -59,8 +59,8 @@ namespace uvcpp {
         }
 
         dnsReq_->once<EvDNSResult>([this, addr, port](const auto &e, auto &tcp){
-          for (auto &addr : e.dnsResults) {
-            if (!this->bind(reinterpret_cast<SockAddr *>(addr.get()))) {
+          for (auto &ip: e.dnsResults) {
+            if (!this->bind(ip, port)) {
               continue;
             }
             return;

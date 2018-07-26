@@ -3,10 +3,6 @@
 
 using namespace uvcpp;
 
-static std::string sasToIP(SockAddrStorage *sas) {
-  return NetUtil::ip(reinterpret_cast<SockAddr *>(sas));
-}
-
 TEST(Req, DNSRequestResolveLocalHost) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
@@ -18,9 +14,8 @@ TEST(Req, DNSRequestResolveLocalHost) {
 
   req.once<EvDNSResult>([](const auto &e, auto &tcp) {
     ASSERT_GT(e.dnsResults.size(), 0);
-    for (auto &sas : e.dnsResults) {
-      auto result = "::1" == sasToIP(sas.get()) ||
-        "127.0.0.1" == sasToIP(sas.get());
+    for (auto &ip : e.dnsResults) {
+      auto result = "::1" == ip || "127.0.0.1" == ip;
       ASSERT_TRUE(result);
     }
   });
@@ -40,7 +35,7 @@ TEST(Req, DNSRequest0000) {
 
   req.once<EvDNSResult>([](const auto &e, auto &tcp) {
     ASSERT_EQ(e.dnsResults.size(), 1);
-    ASSERT_STREQ("0.0.0.0", sasToIP(e.dnsResults[0].get()).c_str());
+    ASSERT_STREQ("0.0.0.0", e.dnsResults[0].c_str());
   });
   req.resolve("0.0.0.0");
 
