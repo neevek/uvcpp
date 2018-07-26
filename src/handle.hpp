@@ -10,6 +10,8 @@
 
 namespace uvcpp {
 
+  struct EvClose : public Event { };
+
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
     public:
@@ -30,6 +32,17 @@ namespace uvcpp {
           this->close();
         });
         return true;
+      }
+
+      template<typename E>
+      void on(EventCallback<E, Derived> &&callback) {
+        if (std::is_same<E, EvClose>::value) {
+          Resource<T, Derived>::template once<E>(
+            std::forward<EventCallback<E, Derived>>(callback));
+        } else {
+          Resource<T, Derived>::template on<E>(
+            std::forward<EventCallback<E, Derived>>(callback));
+        }
       }
 
       template <typename U = Derived, typename ...Args>
