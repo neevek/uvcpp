@@ -15,9 +15,8 @@
 
 namespace uvcpp {
   struct EvWork : public Event { };
-
   struct EvAfterWork : public Event { };
-
+  struct EvDNSRequestFinish : public Event { };
   struct EvDNSResult : public Event {
     using DNSResultVector = std::vector<std::string>;
     EvDNSResult(DNSResultVector &&dnsResults) :
@@ -116,6 +115,8 @@ namespace uvcpp {
                 dnsReq->addr_.c_str(), uv_strerror(status));
           uv_freeaddrinfo(res);
           dnsReq->reportError("resolve failed", status);
+          dnsReq->template
+            publish<EvDNSRequestFinish>(EvDNSRequestFinish{});
           return;
         }
 
@@ -130,6 +131,8 @@ namespace uvcpp {
         uv_freeaddrinfo(res);
         dnsReq->template
           publish<EvDNSResult>(EvDNSResult{ std::move(addrVec) });
+        dnsReq->template
+          publish<EvDNSRequestFinish>(EvDNSRequestFinish{});
       }
 
     private:
