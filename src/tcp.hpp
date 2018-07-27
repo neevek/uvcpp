@@ -94,7 +94,7 @@ namespace uvcpp {
 
       bool connect(const std::string &ip, uint16_t port) {
         if (NetUtil::convertIPAddress(ip, port, &sas_)) {
-          LOG_D("connecting to ip address: %s", ip.c_str());
+          LOG_V("connecting to: %s:%d", ip.c_str(), port);
           return connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
