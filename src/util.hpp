@@ -14,9 +14,8 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <pwd.h>
-#include <uv.h>
 #include "defs.h"
-#include "log/log.h"
+#include "nul/log.hpp"
 
 namespace {
   static const auto CPointerDeleter = [](void *p) { free(p); };

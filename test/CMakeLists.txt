@@ -41,6 +41,7 @@ ExternalProject_Add(uvcpp
 )
 ExternalProject_Get_Property(uvcpp SOURCE_DIR)
 set(UVCPP_INCLUDE_DIR ${SOURCE_DIR}/src)
+set(NUL_INCLUDE_DIR ${SOURCE_DIR}/../uvcpp-build/nul-prefix/src/nul/src)
 set(UV_INCLUDE_DIR ${SOURCE_DIR}/../uvcpp-build/libuv-prefix/src/libuv/include)
 set(UV_LIBRARY_DIR ${SOURCE_DIR}/../uvcpp-build/libuv-prefix/src/libuv/.libs)
 SET_LIBRARY_PROP(uv uvcpp "${UV_LIBRARY_DIR}/libuv.a")
@@ -68,6 +69,7 @@ include_directories(
   "${GTEST_INCLUDE_DIR}/googletest/include"
   "${GTEST_INCLUDE_DIR}/googlemock/include"
   "${UVCPP_INCLUDE_DIR}"
+  "${NUL_INCLUDE_DIR}"
   "${UV_INCLUDE_DIR}"
   ) 
 
@@ -85,7 +87,6 @@ ADD_UVCPP_TEST(tcp uvcpp/tcp.cc)
 ADD_UVCPP_TEST(timer uvcpp/timer.cc)
 ADD_UVCPP_TEST(prepare uvcpp/prepare.cc)
 ADD_UVCPP_TEST(work uvcpp/work.cc)
-ADD_UVCPP_TEST(buffer uvcpp/buffer.cc)
 
 #get_cmake_property(_variableNames VARIABLES)
 #list (SORT _variableNames)

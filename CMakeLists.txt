@@ -41,5 +41,17 @@ set_target_properties(uv PROPERTIES
   INTERFACE_LINK_LIBRARIES "pthread"
   )
 
+ExternalProject_Add(nul
+  #GIT_REPOSITORY "https://github.com/neevek/nul.git"
+  GIT_REPOSITORY "$ENV{HOME}/dev/github/nul"
+  GIT_TAG "master"
+  CMAKE_ARGS ""
+  UPDATE_COMMAND ""
+  INSTALL_COMMAND ""
+  TEST_COMMAND ""
+  GIT_SHALLOW 1
+  GIT_PROGRESS 1
+)
+
 add_library(uvcpp INTERFACE)
 target_include_directories(uvcpp INTERFACE src)

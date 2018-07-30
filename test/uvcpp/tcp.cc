@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "uvcpp.h"
-#include <uv.h>
+#include "uv.h"
 
 using namespace uvcpp;
 
@@ -46,7 +46,7 @@ TEST(Tcp, Connection) {
     });
 
     server->on<EvAccept<Tcp>>([&](const auto &e, auto &server) {
-      auto buf = std::make_unique<Buffer>(serverMsg.size() + 1);
+      auto buf = std::make_unique<nul::Buffer>(serverMsg.size() + 1);
       buf->assign(serverMsg.c_str(), serverMsg.size());
       if (!e.client->writeAsync(std::move(buf))) {
         return;
@@ -80,7 +80,7 @@ TEST(Tcp, Connection) {
         ++writeCount;
       });
 
-      auto buf = std::make_unique<Buffer>(clientMsg.size() + 1);
+      auto buf = std::make_unique<nul::Buffer>(clientMsg.size() + 1);
       buf->assign(clientMsg.c_str(), clientMsg.size());
       if (!client.writeAsync(std::move(buf))) {
         return;

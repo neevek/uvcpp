@@ -9,7 +9,7 @@
 #include "handle.hpp"
 #include "req.hpp"
 #include "defs.h"
-#include "buffer.h"
+#include "nul/buffer.hpp"
 #include <deque>
 
 namespace uvcpp {
@@ -30,9 +30,9 @@ namespace uvcpp {
   struct EvWrite : public Event { };
   struct EvShutdown : public Event { };
   struct EvBufferRecycled : public Event {
-    EvBufferRecycled(std::unique_ptr<Buffer> &&buffer) :
-      buffer(std::forward<std::unique_ptr<Buffer>>(buffer)) { }
-    std::unique_ptr<Buffer> buffer;
+    EvBufferRecycled(std::unique_ptr<nul::Buffer> &&buffer) :
+      buffer(std::forward<std::unique_ptr<nul::Buffer>>(buffer)) { }
+    std::unique_ptr<nul::Buffer> buffer;
   };
 
   template <typename T, typename Derived>
@@ -83,8 +83,8 @@ namespace uvcpp {
        * buffer.base should only be released when this method returns
        * false or the EvWrite event is received
        */
-      bool writeAsync(std::unique_ptr<Buffer> buffer) {
-        auto rawBuffer = buffer.get();
+      bool writeAsync(std::unique_ptr<nul::Buffer> buffer) {
+        auto rawBuffer = buffer->asPod();
 
         auto req = WriteReq::createUnique(this->getLoop(), std::move(buffer));
         auto rawReq = req->get();
@@ -107,7 +107,7 @@ namespace uvcpp {
        * > 0: number of bytes written (can be less than the supplied buffer size).
        * < 0: negative error code (UV_EAGAIN is returned if no data can be sent immediately).
        */
-      int writeSync(const Buffer &buf) {
+      int writeSync(const nul::Buffer &buf) {
         //uv_buf_t buf = { .base = const_cast<char *>(data), .len = len };
         int err;
         if ((err = uv_try_write(

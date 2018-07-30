@@ -6,10 +6,9 @@
 *******************************************************************************/
 #ifndef UVCPP_LOOP_H_
 #define UVCPP_LOOP_H_
-#include <uv.h>
+#include "uv.h"
 #include <memory> 
 #include <functional>
-#include "log/log.h"
 
 namespace uvcpp {
 

@@ -6,12 +6,12 @@
 *******************************************************************************/
 #ifndef UVCPP_REQ_H_
 #define UVCPP_REQ_H_
-#include <uv.h>
 #include <functional>
 #include <vector>
+#include "uv.h"
 #include "resource.hpp"
 #include "util.hpp"
-#include "buffer.h"
+#include "nul/buffer.hpp"
 
 namespace uvcpp {
   struct EvWork : public Event { };
@@ -38,9 +38,9 @@ namespace uvcpp {
 
   class WriteReq : public Req<uv_write_t, WriteReq> {
     public:
-      WriteReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<Buffer> buffer) :
+      WriteReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<nul::Buffer> buffer) :
         Req(loop), buffer(std::move(buffer)) { }
-      std::unique_ptr<Buffer> buffer;
+      std::unique_ptr<nul::Buffer> buffer;
   };
 
   class ConnectReq : public Req<uv_connect_t, ConnectReq> {

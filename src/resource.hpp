@@ -6,14 +6,14 @@
 *******************************************************************************/
 #ifndef UVCPP_RESOURCE_H_
 #define UVCPP_RESOURCE_H_
-#include <uv.h>
 #include <memory>
 #include <string>
 #include <type_traits>
 #include <functional>
 #include <vector>
+#include "uv.h"
 #include "loop.hpp"
-#include "log/log.h"
+#include "nul/log.hpp"
 
 namespace uvcpp {
 
