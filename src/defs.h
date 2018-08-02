@@ -13,9 +13,6 @@
 namespace uvcpp {
   #define STRINGIFY(s) #s
 
-  auto ByteArrayDeleter = [](char *p) { delete [] p; };
-  using ByteArray = std::unique_ptr<char, decltype(ByteArrayDeleter)>;
-
   enum class IPVersion {
     IPV4,
     IPV6
