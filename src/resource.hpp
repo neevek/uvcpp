@@ -99,7 +99,11 @@ namespace uvcpp {
 
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void publish(E &&event) {
-        doCallback<E, CallbackType::ALWAYS>(std::forward<E>(event));
+        if (!std::is_same<E, EvError>::value &&
+            !std::is_same<E, EvRef>::value &&
+            !std::is_same<E, EvDestroy>::value) {
+          doCallback<E, CallbackType::ALWAYS>(std::forward<E>(event));
+        }
         doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
       }
 
