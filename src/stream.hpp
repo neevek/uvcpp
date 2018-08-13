@@ -41,12 +41,14 @@ namespace uvcpp {
       const static auto BUF_SIZE = 8192; 
 
       Stream(const std::shared_ptr<Loop> &loop) : Handle<T, Derived>(loop) { }
-      void listen(int backlog) {
+      bool listen(int backlog) {
         int err;
         if ((err = uv_listen(reinterpret_cast<uv_stream_t *>(this->get()),
                 backlog, onConnectCallback)) != 0) {
           this->reportError("uv_listen", err);
+          return false;
         }
+        return true;
       }
 
       void readStart() {
