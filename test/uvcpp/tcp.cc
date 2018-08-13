@@ -40,11 +40,6 @@ TEST(Tcp, Connection) {
 
     std::shared_ptr<Tcp> acceptedClient;
 
-    server->on<EvBind>([&client](const auto &e, auto &server) {
-      server.listen(50);
-      client->connect(server.getIP(), 9000);
-    });
-
     server->on<EvAccept<Tcp>>([&](const auto &e, auto &server) {
       auto buf = std::make_unique<nul::Buffer>(serverMsg.size() + 1);
       buf->assign(serverMsg.c_str(), serverMsg.size());
@@ -104,7 +99,10 @@ TEST(Tcp, Connection) {
       server->close();
     });
 
-    server->bind("localhost", 9000);
+    if (server->bind("0.0.0.0", 9000)) {
+      server->listen(50);
+      client->connect(server->getIP(), 9000);
+    }
 
     loop->run();
   }

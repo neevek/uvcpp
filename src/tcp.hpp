@@ -9,7 +9,6 @@
 #include "stream.hpp"
 
 namespace uvcpp {
-  struct EvBind : public Event { };
   struct EvConnect : public Event { };
 
   class Tcp : public Stream<uv_tcp_t, Tcp> {
@@ -25,6 +24,7 @@ namespace uvcpp {
       }
 
       bool bind(SockAddr *sa) {
+        int err = -1;
         if (sa->sa_family == AF_INET || sa->sa_family == AF_INET6) {
           //// the port starts from sa_data
           //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
@@ -32,44 +32,24 @@ namespace uvcpp {
           memcpy(&sas_, sa, sa->sa_family == AF_INET ?
               sizeof(SockAddr4) : sizeof(SockAddr6));
 
-          int err;
           if ((err = uv_tcp_bind(get(), sa, 0)) != 0) {
+            this->reportError("uv_tcp_bind", err);
             LOG_W("failed to bind on %s:%d, reason: %s",
                 getIP().c_str(), getPort(), uv_strerror(err));
-            return false;
           }
-
-          LOG_D("bound on: %s:%d", getIP().c_str(), getPort());
-          publish<EvBind>(EvBind{});
-
-          return true;
         }
 
-        return false;
+        return err == 0;
       }
 
-      bool bind(const std::string &addr, uint16_t port) {
+      bool bind(const std::string &ip, uint16_t port) {
         SockAddrStorage sas;
-        if (NetUtil::convertIPAddress(addr, port, &sas)) {
+        if (NetUtil::convertIPAddress(ip, port, &sas)) {
           return bind(reinterpret_cast<SockAddr *>(&sas));
+        } else {
+          LOG_E("[%s] is not a valid ip address", ip.c_str());
+          return false;
         }
-
-        if (!dnsReq_) {
-          dnsReq_ = DNSRequest::createUnique(this->getLoop());
-        }
-
-        dnsReq_->once<EvDNSResult>([this, addr, port](const auto &e, auto &tcp){
-          for (auto &ip: e.dnsResults) {
-            if (!this->bind(ip, port)) {
-              continue;
-            }
-            return;
-          }
-          LOG_E("failed to bind on %s:%d", addr.c_str(), port);
-        });
-
-        dnsReq_->resolve(addr);
-        return true;
       }
 
       bool connect(SockAddr *sa) {
@@ -84,17 +64,18 @@ namespace uvcpp {
         //*reinterpret_cast<uint16_t *>(sa->sa_data) = htons(port);
         //connectReq_->setData(this);
 
-        int err;
+        int err = -1;
         if ((err = uv_tcp_connect(connectReq_->get(), get(), sa, onConnect)) != 0) {
           this->reportError("uv_tcp_connect", err);
-          return false;
+          LOG_W("failed to connect to %s:%d, reason: %s",
+                getIP().c_str(), getPort(), uv_strerror(err));
         }
-        return true;
+
+        return err == 0;
       }
 
       bool connect(const std::string &ip, uint16_t port) {
         if (NetUtil::convertIPAddress(ip, port, &sas_)) {
-          LOG_V("connecting to: %s:%d", ip.c_str(), port);
           return connect(reinterpret_cast<SockAddr *>(&sas_));
 
         } else {
@@ -178,7 +159,6 @@ namespace uvcpp {
       }
 
     private:
-      std::unique_ptr<DNSRequest> dnsReq_{nullptr};
       std::unique_ptr<ConnectReq> connectReq_{nullptr};
       SockAddrStorage sas_;
   };
