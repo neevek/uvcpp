@@ -131,6 +131,7 @@ namespace uvcpp {
               this->template publish<EvBufferRecycled>(
                 EvBufferRecycled{ std::move(r->buffer) });
             }
+            pendingReqs_.clear();
           }
         });
         return true;
@@ -166,18 +167,17 @@ namespace uvcpp {
 
       static void onWriteCallback(uv_write_t *req, int status) {
         auto st = reinterpret_cast<Stream *>(req->handle->data);
+        if (!st->pendingReqs_.empty()) {
+          auto req = std::move(st->pendingReqs_.front());
+          st->pendingReqs_.pop_front();
+
+          st->template publish<EvBufferRecycled>(
+            EvBufferRecycled{ std::move(req->buffer) });
+        }
+
         if (status < 0) {
           st->reportError("write", status);
-
         } else {
-          if (!st->pendingReqs_.empty()) {
-            auto req = std::move(st->pendingReqs_.front());
-            st->pendingReqs_.pop_front();
-
-            st->template publish<EvBufferRecycled>(
-              EvBufferRecycled{ std::move(req->buffer) });
-          }
-
           st->template publish<EvWrite>(EvWrite{});
         }
       }
