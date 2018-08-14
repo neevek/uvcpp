@@ -23,8 +23,9 @@ namespace uvcpp {
   struct EvRef : public Event { };
   struct EvDestroy : public Event { };
   struct EvError : public Event {
-    EvError(int status) : status(status) { }
+    EvError(int status) : status(status), message(uv_strerror(status)) { }
     int status;
+    std::string message;
   };
 
   template <typename E, typename Derived>

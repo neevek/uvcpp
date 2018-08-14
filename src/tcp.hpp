@@ -36,6 +36,8 @@ namespace uvcpp {
             this->reportError("uv_tcp_bind", err);
             LOG_W("failed to bind on %s:%d, reason: %s",
                 getIP().c_str(), getPort(), uv_strerror(err));
+          } else {
+            LOG_I("server bound on %s:%d", getIP().c_str(), getPort());
           }
         }
 

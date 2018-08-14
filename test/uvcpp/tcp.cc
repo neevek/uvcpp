@@ -68,6 +68,7 @@ TEST(Tcp, Connection) {
     });
 
     client->on<EvConnect>([&clientMsg, &writeCount](const auto &e, auto &client) {
+      LOG_D("client connected");
       client.template on<EvBufferRecycled>([&](const auto &e, auto &client) {
         LOG_D("buffer recycled: %p", e.buffer.get());
       });
@@ -99,10 +100,9 @@ TEST(Tcp, Connection) {
       server->close();
     });
 
-    if (server->bind("0.0.0.0", 9000)) {
-      server->listen(50);
-      client->connect(server->getIP(), 9000);
-    }
+    ASSERT_TRUE(server->bind("127.0.0.1", 45678));
+    ASSERT_TRUE(server->listen(50));
+    ASSERT_TRUE(client->connect(server->getIP(), 45678));
 
     loop->run();
   }
@@ -111,28 +111,49 @@ TEST(Tcp, Connection) {
   ASSERT_EQ(destroyCount, EXPECTED_DESTROY_COUNT);
 }
 
-TEST(Tcp, TestFail) {
+TEST(Tcp, ImmediateClose) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
 
+  auto server = Tcp::createUnique(loop);
   auto client = Tcp::createUnique(loop);
+  ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
-  client->once<EvConnect>([](const auto &e, auto &client) {
-    // will no reach here
-    FAIL();
-  });
-
-  client->on<EvRead>([&](const auto &e, auto &client){
-    // will no reach here
-    FAIL();
-  });
-
   client->on<EvError>([&](const auto &e, auto &client){
+    LOG_E("error: %s", e.message.c_str());
     client.close();
+    server->close();
   });
 
-  client->connect("nonexist", 1234);
+  client->once<EvConnect>([](const auto &e, auto &client) {
+    LOG_D("client connected");
+    auto buf = std::make_unique<nul::Buffer>(1);
+    buf->assign("1", 1);
+    client.writeAsync(std::move(buf));
+    client.close();
+    LOG_D("wrote 1 byte");
+  });
+  client->on<EvBufferRecycled>([&](const auto &e, auto &client) {
+    LOG_D("buffer recycled");
+    ASSERT_EQ(1, e.buffer->getCapacity());
+  });
+
+  std::shared_ptr<Tcp> acceptedClient;
+  server->on<EvAccept<Tcp>>([&](const auto &e, auto &s) {
+    e.client->template on<EvRead>([&](const auto &e, auto &c){
+      ASSERT_EQ(e.nread, 1);
+      LOG_D("server receive 1 byte");
+      c.close();
+      s.close();
+    });
+    e.client->readStart();
+    acceptedClient = std::move(const_cast<EvAccept<Tcp> &>(e).client);
+  });
+
+  ASSERT_TRUE(server->bind("127.0.0.1", 45678));
+  ASSERT_TRUE(server->listen(50));
+  ASSERT_TRUE(client->connect(server->getIP(), 45678));
 
   loop->run();
 }
