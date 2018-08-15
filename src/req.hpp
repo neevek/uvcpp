@@ -43,6 +43,13 @@ namespace uvcpp {
       std::unique_ptr<nul::Buffer> buffer;
   };
 
+  class UdpSendReq : public Req<uv_udp_send_t, UdpSendReq> {
+    public:
+      UdpSendReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<nul::Buffer> buffer) :
+        Req(loop), buffer(std::move(buffer)) { }
+      std::unique_ptr<nul::Buffer> buffer;
+  };
+
   class ConnectReq : public Req<uv_connect_t, ConnectReq> {
     public:
       ConnectReq(const std::shared_ptr<Loop> &loop) : Req(loop) { }

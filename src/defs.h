@@ -13,6 +13,8 @@
 namespace uvcpp {
   #define STRINGIFY(s) #s
 
+  using SockHandle = uv_os_sock_t;
+
   enum class IPVersion {
     IPV4,
     IPV6

@@ -10,6 +10,7 @@
 #include "defs.h"
 #include "stream.hpp"
 #include "tcp.hpp"
+#include "udp.hpp"
 #include "timer.hpp"
 #include "prepare.hpp"
 

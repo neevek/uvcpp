@@ -7,10 +7,16 @@
 #ifndef UVCPP_HANDLE_H_
 #define UVCPP_HANDLE_H_
 #include "resource.hpp"
+#include "nul/buffer.hpp"
 
 namespace uvcpp {
 
   struct EvClose : public Event { };
+  struct EvBufferRecycled : public Event {
+    EvBufferRecycled(std::unique_ptr<nul::Buffer> &&buffer) :
+      buffer(std::forward<std::unique_ptr<nul::Buffer>>(buffer)) { }
+    std::unique_ptr<nul::Buffer> buffer;
+  };
 
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {

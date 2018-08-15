@@ -9,7 +9,6 @@
 #include "handle.hpp"
 #include "req.hpp"
 #include "defs.h"
-#include "nul/buffer.hpp"
 #include <deque>
 
 namespace uvcpp {
@@ -29,11 +28,6 @@ namespace uvcpp {
 
   struct EvWrite : public Event { };
   struct EvShutdown : public Event { };
-  struct EvBufferRecycled : public Event {
-    EvBufferRecycled(std::unique_ptr<nul::Buffer> &&buffer) :
-      buffer(std::forward<std::unique_ptr<nul::Buffer>>(buffer)) { }
-    std::unique_ptr<nul::Buffer> buffer;
-  };
 
   template <typename T, typename Derived>
     class Stream : public Handle<T, Derived> {
