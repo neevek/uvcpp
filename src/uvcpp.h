@@ -13,5 +13,6 @@
 #include "udp.hpp"
 #include "timer.hpp"
 #include "prepare.hpp"
+#include "poll.hpp"
 
 #endif /* end of include guard: UVCPP_H_ */

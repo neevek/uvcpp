@@ -4,8 +4,8 @@
 ** Creation Time: 2018-08-15 Wed 03:07 PM
 **   Description: wraps uv_udp_t 
 *******************************************************************************/
-#ifndef UVCPP_UDP_H
-#define UVCPP_UDP_H
+#ifndef UVCPP_UDP_H_
+#define UVCPP_UDP_H_
 #include "handle.hpp"
 #include "defs.h"
 #include "util.hpp"
@@ -236,4 +236,4 @@ namespace uvcpp {
 
 } /* end of namspace: uvcpp */
 
-#endif /* end of include guard: UVCPP_UDP_H */
+#endif /* end of include guard: UVCPP_UDP_H_ */

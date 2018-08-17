@@ -88,6 +88,7 @@ ADD_UVCPP_TEST(udp uvcpp/udp.cc)
 ADD_UVCPP_TEST(timer uvcpp/timer.cc)
 ADD_UVCPP_TEST(prepare uvcpp/prepare.cc)
 ADD_UVCPP_TEST(work uvcpp/work.cc)
+ADD_UVCPP_TEST(poll uvcpp/poll.cc)
 
 #get_cmake_property(_variableNames VARIABLES)
 #list (SORT _variableNames)
