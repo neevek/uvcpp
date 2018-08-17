@@ -34,7 +34,7 @@ namespace uvcpp {
         uv_stop(&loop_);
       }
     
-    private:
+    protected:
       uv_loop_t loop_;
   };
 } /* end of namspace: uvcpp */

@@ -89,6 +89,74 @@ TEST(Poll, UnixDomainSocket) {
   clientPoll->poll(
     static_cast<Poll::Event>(Poll::Event::READABLE | Poll::Event::WRITABLE));
 
+  loop->run();
+}
+
+TEST(PollUnixSock, TestPollUnixSock) {
+  auto loop = std::make_shared<Loop>();
+  ASSERT_TRUE(loop->init());
+
+  auto sockPath = "testsockpath";
+
+  const auto POLL_COUNT = 10;
+  std::vector<std::unique_ptr<PollUnixSock>> v;
+  std::vector<std::unique_ptr<Poll>> v2;
+
+  int count = 0;
+  auto serverPoll = PollUnixSock::createUnique(loop);
+  serverPoll->on<EvPollAccept>([&v2, &count](const auto &e, auto &p){
+    e.poll->template on<EvPoll>([](const auto &e, auto &p){
+      if (e.events & Poll::Event::READABLE) {
+        char buf[1024];
+        read(p.getFd(), buf, sizeof(buf));
+        LOG_D("%s", buf);
+
+        const char *msg = "PollUnixSock: hello from server!";
+        write(p.getFd(), msg, strlen(msg) + 1);
+
+        p.stop();
+        p.close();
+        close(p.getFd());
+      }
+    });
+    e.poll->poll(Poll::Event::READABLE|Poll::Event::WRITABLE);
+
+    v2.push_back(std::move(const_cast<EvPollAccept &>(e).poll));
+
+    if (++count == POLL_COUNT) {
+      p.stop();
+      p.close();
+    }
+  });
+  ASSERT_TRUE(serverPoll->bind(sockPath));
+  ASSERT_TRUE(serverPoll->listen(POLL_COUNT));
+  serverPoll->poll(Poll::Event::READABLE);
+
+  for (int i = 0; i < POLL_COUNT; ++i) {
+    auto clientPoll = PollUnixSock::createUnique(loop);
+    clientPoll->on<EvPoll>([&](const auto &e, auto &p){
+      if (e.events & Poll::Event::WRITABLE) {
+        const char *msg = "PollUnixSock: hello from client!";
+        write(p.getFd(), msg, strlen(msg) + 1);
+        p.poll(Poll::Event::READABLE);
+      }
+
+      if (e.events & Poll::Event::READABLE) {
+        char buf[1024];
+        read(p.getFd(), buf, sizeof(buf));
+        LOG_D("%s", buf);
+
+        p.stop();
+        p.close();
+        close(p.getFd());
+      }
+    });
+    ASSERT_TRUE(clientPoll->connect(sockPath));
+
+    clientPoll->poll(Poll::Event::READABLE|Poll::Event::WRITABLE);
+
+    v.push_back(std::move(clientPoll));
+  }
 
   loop->run();
 }

@@ -36,6 +36,9 @@ namespace uvcpp {
               reinterpret_cast<uv_poll_t *>(get()),
               fd)) != 0) {
           this->reportError("uv_poll_init", err);
+
+        } else {
+          fd_ = fd;
         }
         return err == 0;
       }
@@ -47,16 +50,19 @@ namespace uvcpp {
               reinterpret_cast<uv_poll_t *>(get()),
               sockHandle)) != 0) {
           this->reportError("uv_poll_init", err);
+
+        } else {
+          fd_ = sockHandle;
         }
         return err == 0;
       }
 
-      void poll(Event events) {
+      void poll(int events) {
         int err;
         if ((err = uv_poll_start(
                 reinterpret_cast<uv_poll_t *>(this->get()),
                 events, onPollCallback)) != 0) {
-          this->reportError("uv_poll_recv_start", err);
+          this->reportError("uv_poll_start", err);
         }
       }
 
@@ -64,8 +70,12 @@ namespace uvcpp {
         int err;
         if ((err = uv_poll_stop(
               reinterpret_cast<uv_poll_t *>(this->get()))) != 0) {
-          this->reportError("uv_poll_recv_stop", err);
+          this->reportError("uv_poll_stop", err);
         }
+      }
+
+      int getFd() const {
+        return fd_;
       }
 
     private:
@@ -78,6 +88,9 @@ namespace uvcpp {
           poll->template publish<EvPoll>(EvPoll{ events });
         }
       }
+
+    protected:
+      int fd_{-1};
   };
 
 } /* end of namspace: uvcpp */
