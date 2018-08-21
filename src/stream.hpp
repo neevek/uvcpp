@@ -125,7 +125,10 @@ namespace uvcpp {
               this->template publish<EvBufferRecycled>(
                 EvBufferRecycled{ std::move(r->buffer) });
             }
-            pendingReqs_.clear();
+            // must not clear pendingReqs_ here, because there may exist
+            // uncompleted write requests, which will use the underlying
+            // uv_write_req_t
+            // pendingReqs_.clear();
           }
         });
         return true;
@@ -165,8 +168,11 @@ namespace uvcpp {
           auto req = std::move(st->pendingReqs_.front());
           st->pendingReqs_.pop_front();
 
-          st->template publish<EvBufferRecycled>(
-            EvBufferRecycled{ std::move(req->buffer) });
+          // req->buffer may be std::moved() in EvError callback
+          if (req->buffer) {
+            st->template publish<EvBufferRecycled>(
+              EvBufferRecycled{ std::move(req->buffer) });
+          }
         }
 
         if (status < 0) {
