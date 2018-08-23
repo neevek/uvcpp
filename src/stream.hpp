@@ -32,8 +32,6 @@ namespace uvcpp {
   template <typename T, typename Derived>
     class Stream : public Handle<T, Derived> {
     public:
-      const static auto BUF_SIZE = 8192; 
-
       Stream(const std::shared_ptr<Loop> &loop) : Handle<T, Derived>(loop) { }
       bool listen(int backlog) {
         int err;
@@ -200,7 +198,12 @@ namespace uvcpp {
     private:
       std::deque<std::unique_ptr<WriteReq>> pendingReqs_{};
       std::unique_ptr<ShutdownReq> shutdownReq_{nullptr};
-      char readBuf_[BUF_SIZE];
+
+#ifdef UVCPP_STREAM_BUF_SIZE
+      char readBuf_[UVCPP_STREAM_BUF_SIZE];
+#else
+      char readBuf_[4096];
+#endif
   };
   
 } /* end of namspace: uvcpp */
