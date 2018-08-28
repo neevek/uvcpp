@@ -29,10 +29,7 @@ namespace uvcpp {
     public:
       Req(const std::shared_ptr<Loop> &loop) : Resource<T, Derived>(loop) { }
       void cancel() {
-        int err;
-        if ((err = uv_cancel(reinterpret_cast<uv_req_t *>(this->get()))) < 0) {
-          this->reportError("uv_cancel", err);
-        }
+        uv_cancel(reinterpret_cast<uv_req_t *>(this->get()));
       }
   };
 
@@ -90,9 +87,7 @@ namespace uvcpp {
     public:
       DNSRequest(const std::shared_ptr<Loop> &loop) : Req(loop) { }
 
-      void resolve(
-          const std::string &addr,
-          bool ipv4Only = false) {
+      void resolve(const std::string &addr, bool ipv4Only = false) {
         addr_ = addr;
 
         struct addrinfo hint;
@@ -123,22 +118,21 @@ namespace uvcpp {
                 dnsReq->addr_.c_str(), uv_strerror(status));
           uv_freeaddrinfo(res);
           dnsReq->reportError("resolve failed", status);
-          dnsReq->template
-            publish<EvDNSRequestFinish>(EvDNSRequestFinish{});
-          return;
-        }
 
-        auto addrVec = EvDNSResult::DNSResultVector{};
-        for (auto ai = res; ai != nullptr; ai = ai->ai_next) {
-          auto ip = NetUtil::ip(ai->ai_addr);
-          if (!ip.empty()) {
-            addrVec.emplace_back(ip);
+        } else {
+          auto addrVec = EvDNSResult::DNSResultVector{};
+          for (auto ai = res; ai != nullptr; ai = ai->ai_next) {
+            auto ip = NetUtil::ip(ai->ai_addr);
+            if (!ip.empty()) {
+              addrVec.emplace_back(ip);
+            }
           }
+
+          uv_freeaddrinfo(res);
+          dnsReq->template
+            publish<EvDNSResult>(EvDNSResult{ std::move(addrVec) });
         }
 
-        uv_freeaddrinfo(res);
-        dnsReq->template
-          publish<EvDNSResult>(EvDNSResult{ std::move(addrVec) });
         dnsReq->template
           publish<EvDNSRequestFinish>(EvDNSRequestFinish{});
       }
