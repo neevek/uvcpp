@@ -104,12 +104,13 @@ namespace uvcpp {
         int err;
         if ((err = uv_getaddrinfo(
               getLoop()->getRaw(),
-              this->get(),
+              get(),
               onResolveCallback,
               addr.c_str(),
               nullptr,
               &hint)) != 0) {
-          this->reportError("uv_getaddrinfo", err);
+          reportError("uv_getaddrinfo", err);
+          publish<EvDNSRequestFinish>(EvDNSRequestFinish{});
         }
       }
 
