@@ -14,7 +14,7 @@ TEST(Tcp, Connection) {
     auto loop = std::make_shared<Loop>();
     ASSERT_TRUE(loop->init());
 
-    auto server = Tcp::createUnique(loop);
+    auto server = Tcp::createUnique(loop, Tcp::Domain::INET);
     auto client = Tcp::createUnique(loop);
     ASSERT_TRUE(!!server);
     ASSERT_TRUE(!!client);
@@ -100,9 +100,15 @@ TEST(Tcp, Connection) {
       server->close();
     });
 
-    ASSERT_TRUE(server->bind("127.0.0.1", 45678));
+    int on = 1;
+    server->setSockOption(
+      SO_REUSEADDR, reinterpret_cast<void *>(&on), sizeof(on));
+    server->setSockOption(
+      SO_REUSEPORT, reinterpret_cast<void *>(&on), sizeof(on));
+
+    ASSERT_TRUE(server->bind("127.0.0.1", 22334));
     ASSERT_TRUE(server->listen(50));
-    ASSERT_TRUE(client->connect(server->getIP(), 45678));
+    ASSERT_TRUE(client->connect(server->getIP(), 22334));
 
     loop->run();
   }
@@ -115,7 +121,7 @@ TEST(Tcp, ImmediateClose) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
 
-  auto server = Tcp::createUnique(loop);
+  auto server = Tcp::createUnique(loop, Tcp::Domain::INET);
   auto client = Tcp::createUnique(loop);
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
@@ -151,9 +157,15 @@ TEST(Tcp, ImmediateClose) {
     acceptedClient = std::move(const_cast<EvAccept<Tcp> &>(e).client);
   });
 
-  ASSERT_TRUE(server->bind("127.0.0.1", 45678));
+  int on = 1;
+  server->setSockOption(
+    SO_REUSEADDR, reinterpret_cast<void *>(&on), sizeof(on));
+  server->setSockOption(
+    SO_REUSEPORT, reinterpret_cast<void *>(&on), sizeof(on));
+
+  ASSERT_TRUE(server->bind("127.0.0.1", 22334));
   ASSERT_TRUE(server->listen(50));
-  ASSERT_TRUE(client->connect(server->getIP(), 45678));
+  ASSERT_TRUE(client->connect(server->getIP(), 22334));
 
   loop->run();
 }

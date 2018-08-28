@@ -13,10 +13,19 @@ namespace uvcpp {
 
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     public:
-      Tcp(const std::shared_ptr<Loop> &loop) : Stream(loop) { }
+      enum class Domain {
+        UNSPEC = AF_UNSPEC,
+        INET = AF_INET,
+        INET6 = AF_INET6
+      };
+
+      Tcp(const std::shared_ptr<Loop> &loop, Domain domain = Domain::UNSPEC) :
+        Stream(loop), domain_(domain) { }
 
       virtual bool init() override {
-        if (!Stream::init() || uv_tcp_init(this->getLoop()->getRaw(), get()) != 0) {
+        auto rawLoop = this->getLoop()->getRaw();
+        if (!Stream::init() ||
+            uv_tcp_init_ex(rawLoop, get(), static_cast<int>(domain_)) != 0) {
           LOG_E("failed to init Tcp");
           return false;
         }
@@ -161,6 +170,7 @@ namespace uvcpp {
       }
 
     private:
+      Domain domain_;
       std::unique_ptr<ConnectReq> connectReq_{nullptr};
       SockAddrStorage sas_;
   };
