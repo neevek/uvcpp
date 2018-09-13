@@ -117,7 +117,9 @@ namespace uvcpp {
           return false;
         }
 
-        this->template once<EvError>([this](const auto &e, auto &st){
+        // if pendingReqs are not empty after being closed
+        // the buffers should be recycled
+        this->template once<EvClose>([this](const auto &e, auto &st){
           if (!pendingReqs_.empty()) {
             for (auto &r : pendingReqs_) {
               this->template publish<EvBufferRecycled>(
@@ -126,6 +128,8 @@ namespace uvcpp {
             // must not clear pendingReqs_ here, because there may exist
             // uncompleted write requests, which will use the underlying
             // uv_write_req_t
+            // also, do not need to clear the requests, because they will
+            // be goine with the *this* Stream object when it is deallocated
             // pendingReqs_.clear();
           }
         });
