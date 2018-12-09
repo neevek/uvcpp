@@ -129,7 +129,7 @@ namespace uvcpp {
             // uncompleted write requests, which will use the underlying
             // uv_write_req_t
             // also, do not need to clear the requests, because they will
-            // be goine with the *this* Stream object when it is deallocated
+            // be gone with the *this* Stream object when it is deallocated
             // pendingReqs_.clear();
           }
         });

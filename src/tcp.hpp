@@ -116,7 +116,8 @@ namespace uvcpp {
           LOG_W("uv_fileno failed on server_tcp");
         } else {
           int err;
-          if ((err = setsockopt(fd, SOL_SOCKET, option, value, optionLength)) == -1) {
+          if ((err = setsockopt(
+                fd, SOL_SOCKET, option, value, optionLength)) == -1) {
             this->reportError("setsockopt", err);
           }
         }
@@ -150,8 +151,11 @@ namespace uvcpp {
 
         int len = sizeof(client->sas_);
         if ((err = uv_tcp_getpeername(client->get(),
-                reinterpret_cast<SockAddr *>(&client->sas_), &len)) != 0) {
+              reinterpret_cast<SockAddr *>(&client->sas_), &len)) != 0) {
           LOG_E("uv_tcp_getpeername failed: %s", uv_strerror(err));
+          std::shared_ptr<Tcp> sharedClient = std::move(client);
+          sharedClient->refUntilBeingClosed(sharedClient);
+          sharedClient->reportError("uv_tcp_getpeername", err);
           return;
         }
 
@@ -163,10 +167,11 @@ namespace uvcpp {
       static void onConnect(uv_connect_t *req, int status) {
         auto tcp = reinterpret_cast<Tcp *>(req->handle->data);
         if (status < 0) {
+          LOG_E("onConnect failed: %s", uv_strerror(status));
           tcp->reportError("uv_tcp_connect", status);
-          return;
+        } else {
+          tcp->template publish<EvConnect>(EvConnect{});
         }
-        tcp->template publish<EvConnect>(EvConnect{});
       }
 
     private:
