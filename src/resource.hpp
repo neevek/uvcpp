@@ -42,7 +42,7 @@ namespace uvcpp {
   };
 
   template <typename T, typename Derived>
-  class Resource {
+  class Resource : public std::enable_shared_from_this<Resource<T, Derived>> {
     enum class CallbackType {
       ALWAYS,
       ONCE
@@ -56,8 +56,6 @@ namespace uvcpp {
       virtual ~Resource() {
         publish(EvDestroy{});
       }
-      Resource &&operator=(const Resource &) = delete;
-      Resource &&operator=(const Resource &&) = delete;
 
       T *get() {
         return &resource_;
@@ -67,16 +65,12 @@ namespace uvcpp {
         return loop_;
       }
 
-      /**
-       * keeps a ref to the shared_ptr, calling unrefAll() to unref all
-       * shared_ptrs kept by this Resource object
-       */
-      void ref(const std::shared_ptr<Derived> &ptr) {
-        registerCallback<EvRef, CallbackType::ONCE>([ptr](const auto &, auto &){});
-      }
-
-      void unrefAll() {
-        publish(EvRef{});
+      using std::enable_shared_from_this<Resource<T, Derived>>::shared_from_this;
+      // only call this method on std::shread_ptr
+      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
+      void sharedRefUntil() {
+        registerCallback<E, CallbackType::ONCE>(
+          [_ = shared_from_this()](const auto &, auto &){});
       }
 
       template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>

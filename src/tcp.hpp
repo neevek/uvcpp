@@ -154,7 +154,7 @@ namespace uvcpp {
               reinterpret_cast<SockAddr *>(&client->sas_), &len)) != 0) {
           LOG_E("uv_tcp_getpeername failed: %s", uv_strerror(err));
           std::shared_ptr<Tcp> sharedClient = std::move(client);
-          sharedClient->refUntilBeingClosed(sharedClient);
+          sharedClient->sharedRefUntil<EvClose>();
           sharedClient->reportError("uv_tcp_getpeername", err);
           return;
         }
