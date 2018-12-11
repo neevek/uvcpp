@@ -73,16 +73,14 @@ namespace uvcpp {
         }
       }
 
-      /**
-       * buffer.base should only be released when this method returns
-       * false or the EvWrite event is received
-       */
       bool writeAsync(std::unique_ptr<nul::Buffer> buffer) {
-        auto rawBuffer = buffer->asPod();
+        if (!this->isValid()) {
+          return false;
+        }
 
+        auto rawBuffer = buffer->asPod();
         auto req = WriteReq::createUnique(this->getLoop(), std::move(buffer));
         auto rawReq = req->get();
-
         pendingReqs_.push_back(std::move(req));
 
         int err;
@@ -125,12 +123,7 @@ namespace uvcpp {
               this->template publish<EvBufferRecycled>(
                 EvBufferRecycled{ std::move(r->buffer) });
             }
-            // must not clear pendingReqs_ here, because there may exist
-            // uncompleted write requests, which will use the underlying
-            // uv_write_req_t
-            // also, do not need to clear the requests, because they will
-            // be gone with the *this* Stream object when it is deallocated
-            // pendingReqs_.clear();
+            pendingReqs_.clear();
           }
         });
         return true;
