@@ -44,7 +44,6 @@ namespace uvcpp {
           if ((err = uv_tcp_bind(get(), sa, 0)) != 0) {
             LOG_W("failed to bind on %s:%d, reason: %s",
                 getIP().c_str(), getPort(), uv_strerror(err));
-            this->reportError("uv_tcp_bind", err);
           } else {
             LOG_I("server bound on %s:%d", getIP().c_str(), getPort());
           }
@@ -79,7 +78,6 @@ namespace uvcpp {
         if ((err = uv_tcp_connect(connectReq_->get(), get(), sa, onConnect)) != 0) {
           LOG_W("failed to connect to %s:%d, reason: %s",
                 getIP().c_str(), getPort(), uv_strerror(err));
-          this->reportError("uv_tcp_connect", err);
         }
 
         return err == 0;
@@ -155,7 +153,7 @@ namespace uvcpp {
           LOG_E("uv_tcp_getpeername failed: %s", uv_strerror(err));
           std::shared_ptr<Tcp> sharedClient = std::move(client);
           sharedClient->sharedRefUntil<EvClose>();
-          sharedClient->reportError("uv_tcp_getpeername", err);
+          sharedClient->close();
           return;
         }
 
