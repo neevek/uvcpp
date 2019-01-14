@@ -24,9 +24,10 @@ namespace uvcpp {
 
       virtual bool init() override {
         auto rawLoop = this->getLoop()->getRaw();
+        int err = 0;
         if (!Stream::init() ||
-            uv_tcp_init_ex(rawLoop, get(), static_cast<int>(domain_)) != 0) {
-          LOG_E("failed to init Tcp");
+            (err = uv_tcp_init_ex(rawLoop, get(), static_cast<int>(domain_))) != 0) {
+          LOG_E("failed to init Tcp, reason: %s", uv_strerror(err));
           return false;
         }
         return true;
