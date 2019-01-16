@@ -10,8 +10,11 @@
 #include "req.hpp"
 #include "defs.h"
 #include <deque>
+#include <cassert>
 
 namespace uvcpp {
+  struct EvConnect : public Event { };
+
   template <typename StreamType>
   struct EvAccept : public Event {
     EvAccept(std::unique_ptr<StreamType> client) : client(std::move(client)) { }
@@ -131,6 +134,39 @@ namespace uvcpp {
 
     protected:
       virtual void doAccept() = 0;
+
+      bool sendHandle(uv_stream_t *handle) {
+        auto currentHandleType = this->get()->type;
+        // can only send handle over a pipe
+        assert(currentHandleType == UV_NAMED_PIPE &&
+               reinterpret_cast<uv_pipe_t *>(this->get())->ipc);
+
+        auto handleType = handle->type;
+        assert(handleType == UV_TCP || handleType == UV_NAMED_PIPE);
+
+        if (!this->isValid()) {
+          LOG_E("current stream handle is not valid");
+          return false;
+        }
+
+        auto buffer = std::make_unique<nul::Buffer>(1);
+        buffer->setLength(1);
+        auto rawBuffer = buffer->asPod();
+        auto req = WriteReq::createUnique(this->getLoop(), std::move(buffer));
+        auto rawReq = req->get();
+        pendingReqs_.push_back(std::move(req));
+
+        int err;
+        if ((err = uv_write2(
+              rawReq,
+              reinterpret_cast<uv_stream_t *>(this->get()),
+              reinterpret_cast<uv_buf_t *>(rawBuffer),
+              1, handle, onWriteCallback)) != 0) {
+          this->reportError("uv_write2", err);
+          return false;
+        }
+        return true;
+      }
 
       static void onAllocCallback(
           uv_handle_t *handle, std::size_t size, uv_buf_t *buf) {

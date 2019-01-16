@@ -11,6 +11,7 @@
 #include "stream.hpp"
 #include "tcp.hpp"
 #include "udp.hpp"
+#include "pipe.hpp"
 #include "timer.hpp"
 #include "prepare.hpp"
 #include "poll.hpp"

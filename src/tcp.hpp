@@ -9,9 +9,10 @@
 #include "stream.hpp"
 
 namespace uvcpp {
-  struct EvConnect : public Event { };
-
   class Tcp : public Stream<uv_tcp_t, Tcp> {
+    // in Pipe class, sas_ may be accessed when a Tcp handle is accepted there
+    friend class Pipe;
+
     public:
       enum class Domain {
         UNSPEC = AF_UNSPEC,
@@ -26,7 +27,8 @@ namespace uvcpp {
         auto rawLoop = this->getLoop()->getRaw();
         int err = 0;
         if (!Stream::init() ||
-            (err = uv_tcp_init_ex(rawLoop, get(), static_cast<int>(domain_))) != 0) {
+            (err = uv_tcp_init_ex(
+                rawLoop, get(), static_cast<int>(domain_))) != 0) {
           LOG_E("failed to init Tcp, reason: %s", uv_strerror(err));
           return false;
         }
@@ -76,7 +78,8 @@ namespace uvcpp {
         //connectReq_->setData(this);
 
         int err = -1;
-        if ((err = uv_tcp_connect(connectReq_->get(), get(), sa, onConnect)) != 0) {
+        if ((err = uv_tcp_connect(
+              connectReq_->get(), get(), sa, onConnect)) != 0) {
           LOG_W("failed to connect to %s:%d, reason: %s",
                 getIP().c_str(), getPort(), uv_strerror(err));
         }
