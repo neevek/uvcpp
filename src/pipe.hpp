@@ -25,6 +25,12 @@ namespace uvcpp {
           return false;
         }
 
+        // stream handles can be sent over pipe between different processes
+        // or threads, stream handles can be sent with uv_write2, in the
+        // receiving end of the pipe, we can listen for EvRead events, and
+        // check pending handles with uv_pipe_pending_count(), if it is 1,
+        // it means there's a pending stream handle for the receiving end
+        // to accept
         this->template once<EvRead>([this](const auto &e, auto &handle){
           auto pendingCount = uv_pipe_pending_count(get());
           if (pendingCount != 1) {
@@ -49,10 +55,6 @@ namespace uvcpp {
               LOG_E("uv_accept failed: %s", uv_strerror(err));
               return;
             }
-
-            // we don't know whether to call
-            // uv_tcp_getpeername or uv_tcp_getsockname, so just leave
-            // the IP and port empty
 
             int len = sizeof(tcp->sas_);
             if ((err = uv_tcp_getsockname(

@@ -222,9 +222,12 @@ TEST(Pipe, TestSendTcpHandle) {
       client.readStart();
     });
     pipeClient->once<EvAccept<Tcp>>([&bgThreadTcpServer](const auto &e, auto &client) {
-      LOG_I("will start background thread server");
       client.close();
 
+      LOG_D("receive tcp server handle from main thread");
+
+      // received the tcp server handle from the pipe, now we can listen on it
+      // in the current background thread
       bgThreadTcpServer = std::move(const_cast<EvAccept<Tcp> &>(e).client);
       bgThreadTcpServer->once<EvClose>([bgThreadTcpServer](const auto &e, auto &client) {
         LOG_I("bg thread tcp server closed");
@@ -238,8 +241,8 @@ TEST(Pipe, TestSendTcpHandle) {
         LOG_D("received a client connection in BACKGROUND thread");
       });
 
+      LOG_I("will start background thread server");
       ASSERT_TRUE(bgThreadTcpServer->listen(2100));
-      LOG_D("receive tcp server handle from another thread, start listening...");
     });
 
     pipeClient->connect(pipeServerName);
@@ -266,6 +269,8 @@ TEST(Pipe, TestSendTcpHandle) {
         if (++connectCount == clientCount) {
           LOG_I("will close servers");
 
+          // must close the server handles in loop threads where
+          // they are created
           auto mainWork = Work::createShared(mainLoop);
           mainWork->once<EvAfterWork>(
             [mainWork, &tcpServer, &pipeServer](const auto &e, auto &w) {
@@ -274,6 +279,7 @@ TEST(Pipe, TestSendTcpHandle) {
           });
           mainWork->start();
 
+          // close the background tcp server the its own thread
           auto bgWork = Work::createShared(bgLoop);
           bgWork->once<EvAfterWork>(
             [bgWork, &bgThreadTcpServer](const auto &e, auto &w) {
