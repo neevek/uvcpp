@@ -11,20 +11,6 @@
 
 namespace uvcpp {
 
-  class Pipe;
-
-  struct EvReceivePipeHandle : public Event {
-    EvReceivePipeHandle(std::unique_ptr<Pipe> handle) :
-      handle(std::move(handle)) {}
-    std::unique_ptr<Pipe> handle;
-  };
-
-  struct EvReceiveTcpHandle : public Event {
-    EvReceiveTcpHandle(std::unique_ptr<Tcp> handle) :
-      handle(std::move(handle)) {}
-    std::unique_ptr<Tcp> handle;
-  };
-
   class Pipe : public Stream<uv_pipe_t, Pipe> {
     public:
       Pipe(const std::shared_ptr<Loop> &loop, bool crossProcess = true) :
