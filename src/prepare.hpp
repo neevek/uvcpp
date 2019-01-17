@@ -26,8 +26,8 @@ namespace uvcpp {
       void start() {
         int err;
         if ((err = uv_prepare_start(
-                reinterpret_cast<uv_prepare_t *>(this->get()),
-                onPrepareCallback)) != 0) {
+              reinterpret_cast<uv_prepare_t *>(this->get()),
+              onPrepareCallback)) != 0) {
           this->reportError("uv_prepare_start", err);
         }
       }
@@ -35,11 +35,11 @@ namespace uvcpp {
       void stop() {
         int err;
         if ((err = uv_prepare_stop(
-                reinterpret_cast<uv_prepare_t *>(this->get()))) != 0) {
+              reinterpret_cast<uv_prepare_t *>(this->get()))) != 0) {
           this->reportError("uv_prepare_stop", err);
         }
       }
-    
+
     private:
       static void onPrepareCallback(uv_prepare_t *t) {
         reinterpret_cast<Prepare *>(t->data)->template

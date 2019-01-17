@@ -26,8 +26,8 @@ namespace uvcpp {
       void start(uint64_t timeout, uint64_t repeat) {
         int err;
         if ((err = uv_timer_start(
-                reinterpret_cast<uv_timer_t *>(this->get()),
-                onTimerCallback, timeout, repeat)) != 0) {
+              reinterpret_cast<uv_timer_t *>(this->get()),
+              onTimerCallback, timeout, repeat)) != 0) {
           this->reportError("uv_timer_start", err);
         }
       }
@@ -35,7 +35,7 @@ namespace uvcpp {
       void stop() {
         int err;
         if ((err = uv_timer_stop(
-                reinterpret_cast<uv_timer_t *>(this->get()))) != 0) {
+              reinterpret_cast<uv_timer_t *>(this->get()))) != 0) {
           this->reportError("uv_timer_stop", err);
         }
       }

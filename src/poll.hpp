@@ -60,8 +60,8 @@ namespace uvcpp {
       void poll(int events) {
         int err;
         if ((err = uv_poll_start(
-                reinterpret_cast<uv_poll_t *>(this->get()),
-                events, onPollCallback)) != 0) {
+              reinterpret_cast<uv_poll_t *>(this->get()),
+              events, onPollCallback)) != 0) {
           this->reportError("uv_poll_start", err);
         }
       }

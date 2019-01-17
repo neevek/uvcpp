@@ -51,8 +51,8 @@ namespace uvcpp {
       void recvStart() {
         int err;
         if ((err = uv_udp_recv_start(
-                reinterpret_cast<uv_udp_t *>(this->get()),
-                onAllocCallback, onRecvCallback)) != 0) {
+              reinterpret_cast<uv_udp_t *>(this->get()),
+              onAllocCallback, onRecvCallback)) != 0) {
           this->reportError("uv_udp_recv_start", err);
         }
       }
@@ -111,10 +111,10 @@ namespace uvcpp {
 
         int err;
         if ((err = uv_udp_send(
-                rawReq,
-                reinterpret_cast<uv_udp_t *>(this->get()),
-                reinterpret_cast<uv_buf_t *>(rawBuffer),
-                1, sa, onSendCallback)) != 0) {
+              rawReq,
+              reinterpret_cast<uv_udp_t *>(this->get()),
+              reinterpret_cast<uv_buf_t *>(rawBuffer),
+              1, sa, onSendCallback)) != 0) {
           this->reportError("uv_udp_send", err);
           return false;
         }
@@ -172,8 +172,8 @@ namespace uvcpp {
           SockAddrStorage sas;
           int len;
           if (uv_udp_getsockname(
-                reinterpret_cast<uv_udp_t *>(this->get()),
-                reinterpret_cast<SockAddr *>(&sas), &len) == 0) {
+              reinterpret_cast<uv_udp_t *>(this->get()),
+              reinterpret_cast<SockAddr *>(&sas), &len) == 0) {
             auto p = reinterpret_cast<SockAddr *>(malloc(sizeof(sas)));
             memcpy(p, &sas, sizeof(sas));
             localSa_.reset(p);

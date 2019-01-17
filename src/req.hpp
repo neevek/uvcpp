@@ -70,7 +70,7 @@ namespace uvcpp {
           this->reportError("uv_queue_work", err);
         }
       }
-    
+
     private:
       static void onWorkCallback(uv_work_t *w) {
         reinterpret_cast<Work *>(w->data)->template
