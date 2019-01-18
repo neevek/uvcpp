@@ -139,7 +139,7 @@ namespace uvcpp {
         if ((nameLength = uv_pipe_getpeername(pipe->get(),
               name, &nameLength)) == UV_ENOBUFS) {
           LOG_W("uv_pipe_getpeername failed, UV_ENOBUFS");
-        } else {
+        } else if (nameLength > 0 && nameLength < PATH_MAX) {
           pipe->name_ = std::string(name, nameLength);
         }
 

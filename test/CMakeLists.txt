@@ -90,6 +90,10 @@ ADD_UVCPP_TEST(prepare uvcpp/prepare.cc)
 ADD_UVCPP_TEST(work uvcpp/work.cc)
 ADD_UVCPP_TEST(poll uvcpp/poll.cc)
 
+# build a executable without gtest, so we can debug the code
+#add_executable(testpipe uvcpp/testpipe.cc)
+#target_link_libraries(testpipe uv)
+
 #get_cmake_property(_variableNames VARIABLES)
 #list (SORT _variableNames)
 #foreach (_variableName ${_variableNames})

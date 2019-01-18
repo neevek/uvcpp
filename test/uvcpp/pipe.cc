@@ -2,8 +2,10 @@
 #include "uvcpp.h"
 #include "uv.h"
 #include <thread>
+#include <chrono>
 
 using namespace uvcpp;
+using namespace std::chrono;
 
 void testSharedRef(const std::shared_ptr<Loop> &loop) {
   auto pipe = Pipe::createShared(loop);
@@ -167,7 +169,7 @@ TEST(Pipe, ImmediateClose) {
   loop->run();
 }
 
-TEST(Pipe, TestSendTcpHandle) {
+TEST(Pipe, TestSendListeningTcpHandle) {
   auto mainLoop = std::make_shared<Loop>();
   ASSERT_TRUE(mainLoop->init());
 
@@ -199,7 +201,7 @@ TEST(Pipe, TestSendTcpHandle) {
 
   // listen on the pipe server for EvAccept event, and send the tcp server
   // handle over the pipe when pipe clients connect to the pipe server
-  pipeServer->on<EvAccept<Pipe>>([this, &tcpServer](const auto &e, auto &server) {
+  pipeServer->on<EvAccept<Pipe>>([&tcpServer](const auto &e, auto &server) {
     std::shared_ptr<Pipe> pipe =
       std::move(const_cast<EvAccept<Pipe> &>(e).client);
     pipe->sharedRefUntil<EvClose>();
@@ -298,6 +300,150 @@ TEST(Pipe, TestSendTcpHandle) {
 
   mainLoop->run();
 
+  bgServerThread.join();
+  clientThread.join();
+
+  LOG_I("main thread quit");
+}
+
+
+
+
+TEST(Pipe, TestSendAccpetedTcpHandle) {
+  auto mainLoop = std::make_shared<Loop>();
+  ASSERT_TRUE(mainLoop->init());
+
+  auto pipeServerName = std::string{"test_pipe2"};
+
+  // start pipe server
+  auto pipeServer = Pipe::createShared(mainLoop);
+  ASSERT_TRUE(!!pipeServer);
+  ASSERT_TRUE(pipeServer->bind(pipeServerName));
+  ASSERT_TRUE(pipeServer->listen(500));
+  pipeServer->sharedRefUntil<EvClose>();
+  pipeServer->once<EvClose>([pipeServer](const auto &e, auto &server) {
+    LOG_I("pipe server closed");
+  });
+
+  // listen on the pipe server for EvAccept event, and send the tcp server
+  // handle over the pipe when pipe clients connect to the pipe server
+  pipeServer->on<EvAccept<Pipe>>([](const auto &e, auto &server) {
+    std::shared_ptr<Pipe> pipe =
+      std::move(const_cast<EvAccept<Pipe> &>(e).client);
+    pipe->sharedRefUntil<EvClose>();
+    pipe->readStart();
+
+    // on receiving a tcp handle from the pipe, send a message through
+    // the handle to the remote end
+    pipe->on<EvAccept<Tcp>>([](const auto &e, auto &pipe) {
+      LOG_I("received tcp handle from pipe client");
+      std::shared_ptr<Tcp> tcpConn =
+        std::move(const_cast<EvAccept<Tcp> &>(e).client);
+      tcpConn->sharedRefUntil<EvClose>();
+
+      auto buf = std::make_unique<nul::Buffer>(6);
+      buf->assign("hello\0", 6);
+      if (!tcpConn->writeAsync(std::move(buf))) {
+        LOG_E("write failed");
+      }
+      tcpConn->close();
+
+      pipe.close();
+
+      LOG_I("received tcp handle through connected pipe");
+    });
+
+    LOG_D("received pipe connection");
+  });
+
+
+  auto bgLoop = std::make_shared<Loop>();
+  ASSERT_TRUE(bgLoop->init());
+
+  auto bgThreadTcpServer = Tcp::createShared(bgLoop);
+  ASSERT_TRUE(!!bgThreadTcpServer);
+
+  auto bgServerThread = std::thread([&bgLoop, &bgThreadTcpServer, &pipeServerName](){
+    // start tcp server
+    ASSERT_TRUE(bgThreadTcpServer->bind("127.0.0.1", 12345));
+    ASSERT_TRUE(bgThreadTcpServer->listen(2100));
+    bgThreadTcpServer->once<EvClose>([bgThreadTcpServer](const auto &e, auto &server) {
+      LOG_I("background thread tcp server closed");
+    });
+    bgThreadTcpServer->on<EvAccept<Tcp>>([&pipeServerName](const auto &e, auto &server) {
+      std::shared_ptr<Tcp> tcpConnHandle =
+        std::move(const_cast<EvAccept<Tcp> &>(e).client);
+      tcpConnHandle->sharedRefUntil<EvClose>();
+
+      LOG_I("accepted new tcp connection");
+
+      auto pipeClient = Pipe::createShared(server.getLoop());
+      pipeClient->template sharedRefUntil<EvClose>();
+      pipeClient->template once<EvConnect>([tcpConnHandle](const auto &e, auto &client) {
+        client.sendTcpHandle(*tcpConnHandle);
+        client.close();
+        tcpConnHandle->close();
+
+        LOG_D("sent the tcp handle to the pipe server");
+      });
+      pipeClient->connect(pipeServerName);
+    });
+
+    bgLoop->run();
+    LOG_I("background server thread quit");
+  });
+
+
+  // this thread will start a loop in which connect requests
+  // to the TCP server will be sent
+  auto clientThread = std::thread([&](){
+    const auto clientCount = 200;
+    auto connectCount = 0;
+
+    auto clientLoop = std::make_shared<Loop>();
+    ASSERT_TRUE(clientLoop->init());
+
+    for (auto i = 0; i < clientCount; ++i) {
+      auto tcpClient = Tcp::createShared(clientLoop);
+      tcpClient->sharedRefUntil<EvClose>();
+      tcpClient->once<EvConnect>([](const auto &e, auto &client) {
+        client.readStart();
+      });
+      tcpClient->once<EvClose>([&, i](const auto &e, auto &client) {
+        if (++connectCount == clientCount) {
+          LOG_I("will close servers");
+
+          // must close the server handles in loop threads where
+          // they are created
+          auto mainWork = Work::createShared(mainLoop);
+          mainWork->once<EvAfterWork>(
+            [mainWork, &pipeServer](const auto &e, auto &w) {
+              pipeServer->close();
+            });
+          mainWork->start();
+
+          // close the background tcp server the its own thread
+          auto bgWork = Work::createShared(bgLoop);
+          bgWork->once<EvAfterWork>(
+            [bgWork, &bgThreadTcpServer](const auto &e, auto &w) {
+              bgThreadTcpServer->close();
+            });
+          bgWork->start();
+          LOG_I("finished %d connects, close all servers", clientCount);
+        }
+      });
+      tcpClient->once<EvRead>([&, i](const auto &e, auto &client) {
+        LOG_D("received message : %s, %d", e.buf, i);
+        client.close();
+      });
+      ASSERT_TRUE(tcpClient->connect("127.0.0.1", 12345));
+    }
+
+    clientLoop->run();
+    LOG_I("client thread quit");
+  });
+
+  mainLoop->run();
   bgServerThread.join();
   clientThread.join();
 
