@@ -66,7 +66,7 @@ namespace uvcpp {
               reinterpret_cast<SockAddr6 *>(sas)) == 0;
       }
 
-      static std::string ip(struct sockaddr *addr) {
+      static std::string ip(const struct sockaddr *addr) {
         char ipstr[INET6_ADDRSTRLEN];
         if (addr->sa_family == AF_INET) {
           struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
@@ -83,8 +83,8 @@ namespace uvcpp {
         return "";
       }
 
-      static uint16_t port(struct sockaddr *addr) {
-        return ntohs(reinterpret_cast<sockaddr_in *>(addr)->sin_port);
+      static uint16_t port(const struct sockaddr *addr) {
+        return ntohs(reinterpret_cast<const sockaddr_in *>(addr)->sin_port);
       }
 
       static int fillIPAddress(

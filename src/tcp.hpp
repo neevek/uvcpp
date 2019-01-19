@@ -129,12 +129,12 @@ namespace uvcpp {
         return reinterpret_cast<const SockAddr *>(&sas_);
       }
 
-      std::string getIP() {
-        return NetUtil::ip(reinterpret_cast<SockAddr *>(&sas_));
+      std::string getIP() const {
+        return NetUtil::ip(reinterpret_cast<const SockAddr *>(&sas_));
       }
 
-      uint16_t getPort() {
-        return NetUtil::port(reinterpret_cast<SockAddr *>(&sas_));
+      uint16_t getPort() const {
+        return NetUtil::port(reinterpret_cast<const SockAddr *>(&sas_));
       }
 
     protected:
