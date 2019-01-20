@@ -32,13 +32,13 @@ namespace uvcpp {
         // it means there's a pending stream handle for the receiving end
         // to accept
         this->template once<EvRead>([this](const auto &e, auto &handle){
-          auto pendingCount = uv_pipe_pending_count(get());
+          auto pendingCount = uv_pipe_pending_count(this->get());
           if (pendingCount != 1) {
             return;
           }
 
           std::unique_ptr<Stream> conn = nullptr;
-          auto handleType = uv_pipe_pending_type(get());
+          auto handleType = uv_pipe_pending_type(this->get());
 
           if (handleType == UV_TCP) {
             auto tcp = Tcp::createUnique(this->getLoop());
@@ -50,7 +50,7 @@ namespace uvcpp {
             // from another process or thread
             int err;
             if ((err = uv_accept(
-                  reinterpret_cast<uv_stream_t *>(get()),
+                  reinterpret_cast<uv_stream_t *>(this->get()),
                   reinterpret_cast<uv_stream_t *>(tcp->get()))) != 0) {
               LOG_E("uv_accept failed: %s", uv_strerror(err));
               return;
@@ -73,7 +73,7 @@ namespace uvcpp {
             }
 
             LOG_V("tcp: %s:%d", tcp->getIP().c_str(), tcp->getPort());
-            publish<EvAccept<Tcp>>(EvAccept<Tcp>{ std::move(tcp) });
+            this->publish<EvAccept<Tcp>>(EvAccept<Tcp>{ std::move(tcp) });
 
           } else if (handleType == UV_NAMED_PIPE) {
             this->doAccept();
@@ -136,11 +136,12 @@ namespace uvcpp {
 
         char name[PATH_MAX];
         std::size_t nameLength = sizeof(name);
-        if ((nameLength = uv_pipe_getpeername(pipe->get(),
+        int size = 0;
+        if ((size = uv_pipe_getpeername(pipe->get(),
               name, &nameLength)) == UV_ENOBUFS) {
           LOG_W("uv_pipe_getpeername failed, UV_ENOBUFS");
-        } else if (nameLength > 0 && nameLength < PATH_MAX) {
-          pipe->name_ = std::string(name, nameLength);
+        } else if (size > 0 && size < PATH_MAX) {
+          pipe->name_ = std::string(name, size);
         }
 
         LOG_V("pipe: [%s]", pipe->getName().c_str());
