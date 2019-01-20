@@ -57,10 +57,10 @@ namespace uvcpp {
             }
 
             int len = sizeof(tcp->sas_);
-            if ((err = uv_tcp_getsockname(
+            if ((err = uv_tcp_getpeername(
                   tcp->get(),
                   reinterpret_cast<SockAddr *>(&tcp->sas_), &len)) != 0 &&
-              (err = uv_tcp_getpeername(
+              (err = uv_tcp_getsockname(
                   tcp->get(),
                   reinterpret_cast<SockAddr *>(&tcp->sas_), &len)) != 0) {
               LOG_E("uv_tcp_getsockname/uv_tcp_getpeername failed: %s",
