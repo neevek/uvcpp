@@ -15,8 +15,8 @@ ENDIF()
 ################################
 include(ExternalProject)
 ExternalProject_Add(libuv
-  #GIT_REPOSITORY "https://github.com/libuv/libuv.git"
-  GIT_REPOSITORY "$ENV{HOME}/dev/github/libuv"
+  GIT_REPOSITORY "https://github.com/libuv/libuv.git"
+  #GIT_REPOSITORY "$ENV{HOME}/dev/github/libuv"
   GIT_TAG "v1.x"
   #GIT_TAG "v1.22.0"
   CONFIGURE_COMMAND ${CONFIGURE_COMMMAND}
@@ -42,8 +42,8 @@ ExternalProject_Add(libuv
   #)
 
 ExternalProject_Add(nul
-  #GIT_REPOSITORY "https://github.com/neevek/nul.git"
-  GIT_REPOSITORY "$ENV{HOME}/dev/github/nul"
+  GIT_REPOSITORY "https://github.com/neevek/nul.git"
+  #GIT_REPOSITORY "$ENV{HOME}/dev/github/nul"
   GIT_TAG "master"
   CMAKE_ARGS ""
   UPDATE_COMMAND ""
