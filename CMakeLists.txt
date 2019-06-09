@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 
 set(CONFIGURE_COMMMAND ./autogen.sh && ./configure)
-IF(CMAKE_ANDROID_STANDALONE_TOOLCHAIN)
+IF(CMAKE_ANDROID_NDK)
+  IF(NOT HOST_COMPILER)
+    set (HOST_COMPILER arm-linux-androideabi)
+  ENDIF()
+
+  message("Host compiler=${HOST_COMPILER} ABI=${ANDROID_ABI}")
+
   set(CONFIGURE_COMMMAND ${CONFIGURE_COMMMAND}
-    --with-sysroot=${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}
-    --host=arm-linux-androideabi
+    --with-sysroot=${CMAKE_ANDROID_NDK}/sysroot
+    --host=${HOST_COMPILER}
     --enable-static
     --disable-shared
     )
