@@ -20,8 +20,23 @@ namespace uvcpp {
 
   template <typename T, typename Derived>
   class Handle : public Resource<T, Derived> {
-    public:
+    protected:
       Handle(const std::shared_ptr<Loop> &loop) : Resource<T, Derived>(loop) { }
+
+      virtual bool init() {
+        this->template once<EvError>([this](const auto &e, auto &handle) {
+          this->close();
+        });
+        return true;
+      }
+
+    public:
+      template <typename U = Derived, typename ...Args>
+      static auto create(const std::shared_ptr<Loop> &loop, Args &&...args) {
+        auto handle = Resource<T, U>::template
+          create<U, Args...>(loop, std::forward<Args>(args)...);
+        return handle->init() ? handle : nullptr;
+      }
 
       void close() {
         if (!uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get()))) {
@@ -33,13 +48,6 @@ namespace uvcpp {
         return uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get())) == 0;
       }
 
-      virtual bool init() {
-        this->template once<EvError>([this](const auto &e, auto &handle){
-          this->close();
-        });
-        return true;
-      }
-
       template<typename E>
       void on(EventCallback<E, Derived> &&callback) {
         if (std::is_same<E, EvClose>::value) {
@@ -49,20 +57,6 @@ namespace uvcpp {
           Resource<T, Derived>::template on<E>(
             std::forward<EventCallback<E, Derived>>(callback));
         }
-      }
-
-      template <typename U = Derived, typename ...Args>
-      static auto createUnique(const std::shared_ptr<Loop> &loop, Args ...args) {
-        auto handle = Resource<T, U>::template
-          createUnique<U, Args...>(loop, std::forward<Args>(args)...);
-        return handle->init() ? std::move(handle) : nullptr;
-      }
-
-      template <typename U = Derived, typename ...Args>
-      static auto createShared(const std::shared_ptr<Loop> &loop, Args ...args) {
-        auto handle = Resource<T, U>::template
-          createShared<U, Args...>(loop, std::forward<Args>(args)...);
-        return handle->init() ? handle : nullptr;
       }
 
     private:

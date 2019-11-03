@@ -7,7 +7,7 @@ TEST(Prepare, LoopCount) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
 
-  auto prepare = Prepare::createUnique(loop);
+  auto prepare = Prepare::create(loop);
 
   prepare->on<EvError>([](const auto &e, auto &prepare) {
     FAIL() << "prepare failed with status: " << e.status;

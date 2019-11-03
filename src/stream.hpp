@@ -17,9 +17,9 @@ namespace uvcpp {
 
   template <typename StreamType>
     struct EvAccept : public Event {
-      EvAccept(std::unique_ptr<StreamType> client) :
+      EvAccept(const std::shared_ptr<StreamType> &client) :
         client(std::move(client)) { }
-      std::unique_ptr<StreamType> client;
+      std::shared_ptr<StreamType> client;
     };
 
   struct EvRead : public Event {
@@ -35,8 +35,29 @@ namespace uvcpp {
 
   template <typename T, typename Derived>
     class Stream : public Handle<T, Derived> {
-      public:
+      protected:
         Stream(const std::shared_ptr<Loop> &loop) : Handle<T, Derived>(loop) { }
+
+        virtual bool init() override {
+          if (!Handle<T, Derived>::init()) {
+            return false;
+          }
+
+          // if pendingReqs are not empty after being closed
+          // the buffers should be recycled
+          this->template once<EvClose>([this](const auto &e, auto &st){
+            if (!pendingReqs_.empty()) {
+              for (auto &r : pendingReqs_) {
+                this->template publish<EvBufferRecycled>(
+                  EvBufferRecycled{ std::move(r->buffer) });
+              }
+              pendingReqs_.clear();
+            }
+          });
+          return true;
+        }
+
+      public:
         bool listen(int backlog) {
           int err;
           if ((err = uv_listen(reinterpret_cast<uv_stream_t *>(this->get()),
@@ -66,7 +87,7 @@ namespace uvcpp {
 
         void shutdown() {
           if (!shutdownReq_) {
-            shutdownReq_ = ShutdownReq::createUnique(this->getLoop());
+            shutdownReq_ = ShutdownReq::create(this->getLoop());
           }
 
           int err;
@@ -78,13 +99,13 @@ namespace uvcpp {
           }
         }
 
-        bool writeAsync(std::unique_ptr<nul::Buffer> buffer) {
+        bool writeAsync(std::unique_ptr<nul::Buffer> &&buffer) {
           if (!this->isValid()) {
             return false;
           }
 
           auto rawBuffer = buffer->asPod();
-          auto req = WriteReq::createUnique(this->getLoop(), std::move(buffer));
+          auto req = WriteReq::create(this->getLoop(), std::move(buffer));
           auto rawReq = req->get();
           pendingReqs_.push_back(std::move(req));
 
@@ -115,25 +136,6 @@ namespace uvcpp {
           return err;
         }
 
-        virtual bool init() override {
-          if (!Handle<T, Derived>::init()) {
-            return false;
-          }
-
-          // if pendingReqs are not empty after being closed
-          // the buffers should be recycled
-          this->template once<EvClose>([this](const auto &e, auto &st){
-            if (!pendingReqs_.empty()) {
-              for (auto &r : pendingReqs_) {
-                this->template publish<EvBufferRecycled>(
-                  EvBufferRecycled{ std::move(r->buffer) });
-              }
-              pendingReqs_.clear();
-            }
-          });
-          return true;
-        }
-
       protected:
         virtual void doAccept() = 0;
 
@@ -154,7 +156,7 @@ namespace uvcpp {
           auto buffer = std::make_unique<nul::Buffer>(1);
           buffer->setLength(1);
           auto rawBuffer = buffer->asPod();
-          auto req = WriteReq::createUnique(this->getLoop(), std::move(buffer));
+          auto req = WriteReq::create(this->getLoop(), std::move(buffer));
           auto rawReq = req->get();
           pendingReqs_.push_back(std::move(req));
 
@@ -231,8 +233,8 @@ namespace uvcpp {
         }
 
       private:
-        std::deque<std::unique_ptr<WriteReq>> pendingReqs_{};
-        std::unique_ptr<ShutdownReq> shutdownReq_{nullptr};
+        std::deque<std::shared_ptr<WriteReq>> pendingReqs_;
+        std::shared_ptr<ShutdownReq> shutdownReq_;
 
 #ifdef UVCPP_STREAM_BUF_SIZE
         char readBuf_[UVCPP_STREAM_BUF_SIZE];

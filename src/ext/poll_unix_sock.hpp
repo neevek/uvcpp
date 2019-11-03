@@ -11,29 +11,26 @@
 
 namespace uvcpp {
   struct EvPollAccept : public Event {
-    EvPollAccept(std::unique_ptr<Poll> poll) :
+    EvPollAccept(const std::shared_ptr<Poll> &poll) :
       poll(std::move(poll)) {}
-    std::unique_ptr<Poll> poll;
+    std::shared_ptr<Poll> poll;
   };
 
   class PollUnixSock : public Poll {
-    public:
+    friend class Resource<uv_poll_t, PollUnixSock>;
+    friend class Handle<uv_poll_t, PollUnixSock>;
+
+    protected:
       PollUnixSock(const std::shared_ptr<Loop> &loop) : Poll(loop) {
         memset(&sockAddr_, 0, sizeof(sockAddr_));
         sockAddr_.sun_family = AF_UNIX;
       }
 
+    public:
       template <typename U = PollUnixSock, typename ...Args>
-      static auto createUnique(const std::shared_ptr<Loop> &loop, Args ...args) {
+      static auto create(const std::shared_ptr<Loop> &loop, Args &&...args) {
         auto handle = Resource<uv_poll_t, U>::template
-          createUnique<U, Args...>(loop, std::forward<Args>(args)...);
-        return handle->init() ? std::move(handle) : nullptr;
-      }
-
-      template <typename U = PollUnixSock, typename ...Args>
-      static auto createShared(const std::shared_ptr<Loop> &loop, Args ...args) {
-        auto handle = Resource<uv_poll_t, U>::template
-          createShared<U, Args...>(loop, std::forward<Args>(args)...);
+          create<U, Args...>(loop, std::forward<Args>(args)...);
         return handle->init() ? handle : nullptr;
       }
 
@@ -70,7 +67,7 @@ namespace uvcpp {
               LOG_W("accept() failed: %s", strerror(errno));
 
             } else {
-              auto cPoll = Poll::createUnique(p.getLoop());
+              auto cPoll = Poll::create(p.getLoop());
               cPoll->initWithSockHandle(cSock);
 
               this->publish<EvPollAccept>(

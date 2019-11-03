@@ -26,7 +26,10 @@ namespace uvcpp {
 
   template <int PACKET_BUF = 32768>
   class Udp : public Handle<uv_udp_t, Udp<PACKET_BUF>> {
-    public:
+    friend class Resource<uv_udp_t, Udp<PACKET_BUF>>;
+    friend class Handle<uv_udp_t, Udp<PACKET_BUF>>;
+
+    protected:
       Udp(const std::shared_ptr<Loop> &loop) :
         Handle<uv_udp_t, Udp<PACKET_BUF>>(loop) { }
 
@@ -48,6 +51,7 @@ namespace uvcpp {
         return true;
       }
 
+    public:
       void recvStart() {
         int err;
         if ((err = uv_udp_recv_start(
@@ -101,10 +105,10 @@ namespace uvcpp {
         return err == 0;
       }
 
-      bool send(std::unique_ptr<nul::Buffer> buffer, const SockAddr *sa) {
+      bool send(std::unique_ptr<nul::Buffer> &&buffer, const SockAddr *sa) {
         auto rawBuffer = buffer->asPod();
 
-        auto req = UdpSendReq::createUnique(this->getLoop(), std::move(buffer));
+        auto req = UdpSendReq::create(this->getLoop(), std::move(buffer));
         auto rawReq = req->get();
 
         pendingReqs_.push_back(std::move(req));
@@ -121,7 +125,7 @@ namespace uvcpp {
         return true;
       }
 
-      bool send(std::unique_ptr<nul::Buffer> buffer) {
+      bool send(std::unique_ptr<nul::Buffer> &&buffer) {
         if (!sas_) {
           return false;
           LOG_E("call setDesitinationAddr to set the address first");
@@ -228,7 +232,7 @@ namespace uvcpp {
       }
 
     private:
-      std::deque<std::unique_ptr<UdpSendReq>> pendingReqs_{};
+      std::deque<std::shared_ptr<UdpSendReq>> pendingReqs_{};
       std::unique_ptr<SockAddr, CPointerDeleterType> localSa_{nullptr, CPointerDeleter};
       std::unique_ptr<SockAddr, CPointerDeleterType> sas_{nullptr, CPointerDeleter};
       char recvBuf_[PACKET_BUF];

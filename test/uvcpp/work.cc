@@ -7,7 +7,7 @@ TEST(Work, Repeat) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
 
-  auto work = Work::createUnique(loop);
+  auto work = Work::create(loop);
   ASSERT_TRUE(!!work);
 
   work->on<EvError>([](const auto &e, auto &work) {

@@ -12,7 +12,46 @@
 namespace uvcpp {
 
   class Pipe : public Stream<uv_pipe_t, Pipe> {
+    friend class Resource;
+    friend class Handle;
+
     public:
+      bool bind(const std::string &name) {
+        name_ = name;
+
+        std::unique_ptr<Stream> handle;
+        int err = -1;
+        if ((err = uv_pipe_bind(get(), name.c_str())) != 0) {
+          LOG_W("failed to bind on [%s], reason: %s",
+                name.c_str(), uv_strerror(err));
+        } else {
+          LOG_I("server bound on [%s]", name.c_str());
+        }
+
+        return err == 0;
+      }
+
+      void connect(const std::string &name) {
+        name_ = name;
+        if (!connectReq_) {
+          connectReq_ = ConnectReq::create(this->getLoop());
+        }
+        uv_pipe_connect(connectReq_->get(), get(), name.c_str(), onConnect);
+      }
+
+      bool sendTcpHandle(Tcp &tcp) {
+        return sendHandle(reinterpret_cast<uv_stream_t *>(tcp.get()));
+      }
+
+      bool sendPipeHandle(Pipe &pipe) {
+        return sendHandle(reinterpret_cast<uv_stream_t *>(pipe.get()));
+      }
+
+      std::string getName() {
+        return name_;
+      }
+
+    protected:
       Pipe(const std::shared_ptr<Loop> &loop, bool crossProcess = true) :
         Stream(loop), crossProcess_(crossProcess) { }
 
@@ -37,11 +76,10 @@ namespace uvcpp {
             return;
           }
 
-          std::unique_ptr<Stream> conn = nullptr;
           auto handleType = uv_pipe_pending_type(this->get());
 
           if (handleType == UV_TCP) {
-            auto tcp = Tcp::createUnique(this->getLoop());
+            auto tcp = Tcp::create(this->getLoop());
             if (!tcp) {
               return;
             }
@@ -57,18 +95,15 @@ namespace uvcpp {
             }
 
             int len = sizeof(tcp->sas_);
-            if ((err = uv_tcp_getpeername(
-                  tcp->get(),
+            if ((err = uv_tcp_getpeername(tcp->get(),
                   reinterpret_cast<SockAddr *>(&tcp->sas_), &len)) != 0 &&
-              (err = uv_tcp_getsockname(
-                  tcp->get(),
+              (err = uv_tcp_getsockname(tcp->get(),
                   reinterpret_cast<SockAddr *>(&tcp->sas_), &len)) != 0) {
               LOG_E("uv_tcp_getsockname/uv_tcp_getpeername failed: %s",
                     uv_strerror(err));
 
-              std::shared_ptr<Tcp> sharedClient = std::move(tcp);
-              sharedClient->sharedRefUntil<EvClose>();
-              sharedClient->close();
+              tcp->selfRefUntil<EvClose>();
+              tcp->close();
               return;
             }
 
@@ -85,44 +120,8 @@ namespace uvcpp {
         return true;
       }
 
-      bool bind(const std::string &name) {
-        name_ = name;
-
-        std::unique_ptr<Stream> handle;
-        int err = -1;
-        if ((err = uv_pipe_bind(get(), name.c_str())) != 0) {
-          LOG_W("failed to bind on [%s], reason: %s",
-                name.c_str(), uv_strerror(err));
-        } else {
-          LOG_I("server bound on [%s]", name.c_str());
-        }
-
-        return err == 0;
-      }
-
-      void connect(const std::string &name) {
-        name_ = name;
-        if (!connectReq_) {
-          connectReq_ = ConnectReq::createUnique(this->getLoop());
-        }
-        uv_pipe_connect(connectReq_->get(), get(), name.c_str(), onConnect);
-      }
-
-      bool sendTcpHandle(Tcp &tcp) {
-        return sendHandle(reinterpret_cast<uv_stream_t *>(tcp.get()));
-      }
-
-      bool sendPipeHandle(Pipe &pipe) {
-        return sendHandle(reinterpret_cast<uv_stream_t *>(pipe.get()));
-      }
-
-      std::string getName() {
-        return name_;
-      }
-
-    protected:
       virtual void doAccept() override {
-        auto pipe = Pipe::createUnique(this->getLoop());
+        auto pipe = Pipe::create(this->getLoop());
         if (!pipe) {
           return;
         }
@@ -161,7 +160,7 @@ namespace uvcpp {
 
     private:
       bool crossProcess_;
-      std::unique_ptr<ConnectReq> connectReq_{nullptr};
+      std::shared_ptr<ConnectReq> connectReq_;
       std::string name_;
   };
 } /* end of namspace: uvcpp */

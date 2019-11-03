@@ -18,6 +18,13 @@ namespace uvcpp {
   };
 
   class Poll : public Handle<uv_poll_t, Poll> {
+    friend class Resource;
+    friend class Handle;
+
+    protected:
+      Poll(const std::shared_ptr<Loop> &loop) :
+        Handle<uv_poll_t, Poll>(loop) { }
+
     public:
       enum Event {
         READABLE    = 1,
@@ -25,9 +32,6 @@ namespace uvcpp {
         DISCONNECT  = 4,
         PRIORITIZED = 8,
       };
-
-      Poll(const std::shared_ptr<Loop> &loop) :
-        Handle<uv_poll_t, Poll>(loop) { }
 
       bool initWithFd(int fd) {
         int err;

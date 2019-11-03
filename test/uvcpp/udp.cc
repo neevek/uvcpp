@@ -13,8 +13,8 @@ TEST(Udp, Simple) {
     auto loop = std::make_shared<Loop>();
     ASSERT_TRUE(loop->init());
 
-    auto server = Udp<>::createUnique(loop);
-    auto client = Udp<>::createUnique(loop);
+    auto server = Udp<>::create(loop);
+    auto client = Udp<>::create(loop);
     ASSERT_TRUE(!!server);
     ASSERT_TRUE(!!client);
     server->once<EvDestroy>([&destroyCount](const auto &e, auto &udp) {
@@ -92,8 +92,8 @@ TEST(Udp, RawSocket) {
     auto loop = std::make_shared<Loop>();
     ASSERT_TRUE(loop->init());
 
-    auto server = Udp<>::createUnique(loop);
-    auto client = Udp<>::createUnique(loop);
+    auto server = Udp<>::create(loop);
+    auto client = Udp<>::create(loop);
     ASSERT_TRUE(!!server);
     ASSERT_TRUE(!!client);
 

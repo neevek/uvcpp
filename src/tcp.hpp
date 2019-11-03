@@ -12,6 +12,8 @@ namespace uvcpp {
   class Tcp : public Stream<uv_tcp_t, Tcp> {
     // in Pipe class, sas_ may be accessed when a Tcp handle is accepted there
     friend class Pipe;
+    friend class Resource;
+    friend class Handle;
 
     public:
       enum class Domain {
@@ -19,21 +21,6 @@ namespace uvcpp {
         INET = AF_INET,
         INET6 = AF_INET6
       };
-
-      Tcp(const std::shared_ptr<Loop> &loop, Domain domain = Domain::UNSPEC) :
-        Stream(loop), domain_(domain) { }
-
-      virtual bool init() override {
-        auto rawLoop = this->getLoop()->getRaw();
-        int err = 0;
-        if (!Stream::init() ||
-            (err = uv_tcp_init_ex(
-                rawLoop, get(), static_cast<int>(domain_))) != 0) {
-          LOG_E("failed to init Tcp, reason: %s", uv_strerror(err));
-          return false;
-        }
-        return true;
-      }
 
       bool bind(SockAddr *sa) {
         int err = -1;
@@ -67,7 +54,7 @@ namespace uvcpp {
 
       bool connect(SockAddr *sa) {
         if (!connectReq_) {
-          connectReq_ = ConnectReq::createUnique(this->getLoop());
+          connectReq_ = ConnectReq::create(this->getLoop());
         }
 
         memcpy(&sas_, sa, sa->sa_family == AF_INET ?
@@ -138,8 +125,23 @@ namespace uvcpp {
       }
 
     protected:
+      Tcp(const std::shared_ptr<Loop> &loop, Domain domain = Domain::UNSPEC) :
+        Stream(loop), domain_(domain) { }
+
+      virtual bool init() override {
+        auto rawLoop = this->getLoop()->getRaw();
+        int err = 0;
+        if (!Stream::init() ||
+            (err = uv_tcp_init_ex(
+                rawLoop, get(), static_cast<int>(domain_))) != 0) {
+          LOG_E("failed to init Tcp, reason: %s", uv_strerror(err));
+          return false;
+        }
+        return true;
+      }
+
       virtual void doAccept() override {
-        auto client = Tcp::createUnique(this->getLoop());
+        auto client = Tcp::create(this->getLoop());
         if (!client) {
           return;
         }
@@ -156,7 +158,7 @@ namespace uvcpp {
               reinterpret_cast<SockAddr *>(&client->sas_), &len)) != 0) {
           LOG_E("uv_tcp_getpeername failed: %s", uv_strerror(err));
           std::shared_ptr<Tcp> sharedClient = std::move(client);
-          sharedClient->sharedRefUntil<EvClose>();
+          sharedClient->selfRefUntil<EvClose>();
           sharedClient->close();
           return;
         }
@@ -178,7 +180,7 @@ namespace uvcpp {
 
     private:
       Domain domain_;
-      std::unique_ptr<ConnectReq> connectReq_{nullptr};
+      std::shared_ptr<ConnectReq> connectReq_{nullptr};
       SockAddrStorage sas_;
   };
 } /* end of namspace: uvcpp */

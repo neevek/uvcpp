@@ -12,7 +12,10 @@ namespace uvcpp {
   struct EvPrepare : public Event { };
 
   class Prepare : public Handle<uv_prepare_t, Prepare> {
-    public:
+    friend class Resource;
+    friend class Handle;
+
+    protected:
       Prepare(const std::shared_ptr<Loop> &loop) : Handle(loop) { }
 
       virtual bool init() override {
@@ -23,6 +26,7 @@ namespace uvcpp {
         return true;
       }
 
+    public:
       void start() {
         int err;
         if ((err = uv_prepare_start(

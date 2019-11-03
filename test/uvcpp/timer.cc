@@ -7,7 +7,7 @@ using namespace uvcpp;
   //auto loop = std::make_shared<Loop>();
   //ASSERT_TRUE(loop->init());
 
-  //auto timer = Timer::createUnique(loop);
+  //auto timer = Timer::create(loop);
   //ASSERT_TRUE(!!timer);
 
   //timer->on<EvError>([](const auto &e, auto &timer) {
@@ -43,7 +43,7 @@ TEST(Timer, RepeatShared) {
     auto loop = std::make_shared<Loop>();
     ASSERT_TRUE(loop->init());
 
-    auto timer = Timer::createShared(loop);
+    auto timer = Timer::create(loop);
     ASSERT_TRUE(!!timer);
 
     timer->on<EvError>([](const auto &e, auto &timer) {

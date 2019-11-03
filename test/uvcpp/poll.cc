@@ -12,7 +12,7 @@ TEST(Poll, UnixDomainSocket) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
 
-  auto serverPoll = Poll::createUnique(loop);
+  auto serverPoll = Poll::create(loop);
   int sSock = socket(AF_UNIX, SOCK_STREAM, 0);
   ASSERT_NE(sSock, -1);
 
@@ -26,7 +26,7 @@ TEST(Poll, UnixDomainSocket) {
   ASSERT_NE(bind(sSock, (struct sockaddr*)&addr, sizeof(addr)), -1);
   ASSERT_NE(listen(sSock, 1), -1);
 
-  std::vector<std::unique_ptr<Poll>> v;
+  std::vector<std::shared_ptr<Poll>> v;
 
   serverPoll->initWithSockHandle(sSock);
   serverPoll->on<EvPoll>([sSock, &v](const auto &e, auto &serverPoll){
@@ -35,7 +35,7 @@ TEST(Poll, UnixDomainSocket) {
     int cSock = accept(sSock, (struct sockaddr *)&c_addr, &len);
     ASSERT_NE(cSock, -1);
 
-    auto p = Poll::createUnique(serverPoll.getLoop());
+    auto p = Poll::create(serverPoll.getLoop());
     p->initWithSockHandle(cSock);
     p->template on<EvPoll>([&](const auto &e, auto &p){
       char buf[1024];
@@ -62,7 +62,7 @@ TEST(Poll, UnixDomainSocket) {
 
 
   // client poll
-  auto clientPoll = Poll::createUnique(loop);
+  auto clientPoll = Poll::create(loop);
   int clientSock = socket(AF_UNIX, SOCK_STREAM, 0);
   ASSERT_NE(clientSock, -1);
   ASSERT_NE(connect(clientSock, (struct sockaddr*)&addr, sizeof(addr)), -1);
@@ -99,11 +99,11 @@ TEST(PollUnixSock, TestPollUnixSock) {
   auto sockPath = "testsockpath";
 
   const auto POLL_COUNT = 10;
-  std::vector<std::unique_ptr<PollUnixSock>> v;
-  std::vector<std::unique_ptr<Poll>> v2;
+  std::vector<std::shared_ptr<PollUnixSock>> v;
+  std::vector<std::shared_ptr<Poll>> v2;
 
   int count = 0;
-  auto serverPoll = PollUnixSock::createUnique(loop);
+  auto serverPoll = PollUnixSock::create(loop);
   serverPoll->on<EvPollAccept>([&v2, &count](const auto &e, auto &p){
     e.poll->template on<EvPoll>([](const auto &e, auto &p){
       if (e.events & Poll::Event::READABLE) {
@@ -133,7 +133,7 @@ TEST(PollUnixSock, TestPollUnixSock) {
   serverPoll->poll(Poll::Event::READABLE);
 
   for (int i = 0; i < POLL_COUNT; ++i) {
-    auto clientPoll = PollUnixSock::createUnique(loop);
+    auto clientPoll = PollUnixSock::create(loop);
     clientPoll->on<EvPoll>([&](const auto &e, auto &p){
       if (e.events & Poll::Event::WRITABLE) {
         const char *msg = "PollUnixSock: hello from client!";

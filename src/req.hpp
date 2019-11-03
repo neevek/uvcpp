@@ -35,14 +35,14 @@ namespace uvcpp {
 
   class WriteReq : public Req<uv_write_t, WriteReq> {
     public:
-      WriteReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<nul::Buffer> buffer) :
+      WriteReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<nul::Buffer> &&buffer) :
         Req(loop), buffer(std::move(buffer)) { }
       std::unique_ptr<nul::Buffer> buffer;
   };
 
   class UdpSendReq : public Req<uv_udp_send_t, UdpSendReq> {
     public:
-      UdpSendReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<nul::Buffer> buffer) :
+      UdpSendReq(const std::shared_ptr<Loop> &loop, std::unique_ptr<nul::Buffer> &&buffer) :
         Req(loop), buffer(std::move(buffer)) { }
       std::unique_ptr<nul::Buffer> buffer;
   };
@@ -58,9 +58,12 @@ namespace uvcpp {
   };
 
   class Work : public Req<uv_work_t, Work> {
-    public:
+    friend class Resource;
+
+    protected:
       Work(const std::shared_ptr<Loop> &loop) : Req(loop) { }
 
+    public:
       void start() {
         int err;
         if ((err = uv_queue_work(
@@ -84,9 +87,12 @@ namespace uvcpp {
   };
 
   class DNSRequest : public Req<uv_getaddrinfo_t, DNSRequest> {
-    public:
+    friend class Resource;
+
+    protected:
       DNSRequest(const std::shared_ptr<Loop> &loop) : Req(loop) { }
 
+    public:
       void resolve(const std::string &addr, bool ipv4Only = false) {
         addr_ = addr;
 

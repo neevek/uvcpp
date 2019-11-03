@@ -12,7 +12,10 @@ namespace uvcpp {
   struct EvTimer : public Event { };
 
   class Timer : public Handle<uv_timer_t, Timer> {
-    public:
+    friend class Resource;
+    friend class Handle;
+
+    protected:
       Timer(const std::shared_ptr<Loop> &loop) : Handle(loop) { }
 
       virtual bool init() override {
@@ -23,6 +26,7 @@ namespace uvcpp {
         return true;
       }
 
+    public:
       void start(uint64_t timeout, uint64_t repeat) {
         int err;
         if ((err = uv_timer_start(

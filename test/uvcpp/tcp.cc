@@ -5,8 +5,11 @@
 using namespace uvcpp;
 
 void testSharedRef(const std::shared_ptr<Loop> &loop) {
-  auto tcp = Tcp::createShared(loop, Tcp::Domain::INET);
-  tcp->sharedRefUntil<EvClose>();
+  auto tcp = Tcp::create(loop, Tcp::Domain::INET);
+  tcp->selfRefUntil<EvClose>();
+  tcp->once<EvDestroy>([](const auto &e, auto &tcp){
+    LOG_I("destroyed!!!!!!!");
+  });
   tcp->close();
 }
 
@@ -22,8 +25,8 @@ TEST(Tcp, Connection) {
 
     testSharedRef(loop);
 
-    auto server = Tcp::createUnique(loop, Tcp::Domain::INET);
-    auto client = Tcp::createUnique(loop);
+    auto server = Tcp::create(loop, Tcp::Domain::INET);
+    auto client = Tcp::create(loop);
     ASSERT_TRUE(!!server);
     ASSERT_TRUE(!!client);
     server->once<EvDestroy>([&destroyCount](const auto &e, auto &tcp) {
@@ -129,8 +132,8 @@ TEST(Tcp, ImmediateClose) {
   auto loop = std::make_shared<Loop>();
   ASSERT_TRUE(loop->init());
 
-  auto server = Tcp::createUnique(loop, Tcp::Domain::INET);
-  auto client = Tcp::createUnique(loop);
+  auto server = Tcp::create(loop, Tcp::Domain::INET);
+  auto client = Tcp::create(loop);
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 

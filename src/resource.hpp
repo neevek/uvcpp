@@ -18,7 +18,7 @@
 namespace uvcpp {
 
   struct Event {
-    virtual ~Event() { }
+    virtual ~Event() = default;
   };
   struct EvRef : public Event { };
   struct EvDestroy : public Event { };
@@ -31,12 +31,12 @@ namespace uvcpp {
   template <typename E, typename Derived>
   using EventCallback = std::function<void(const E &event, Derived &handle)>;
 
-  struct CallbackInterface {
-    virtual ~CallbackInterface() { }
+  struct ICallback {
+    virtual ~ICallback() = default;
   };
 
   template <typename E, typename Derived>
-  struct Callback : public CallbackInterface {
+  struct Callback : public ICallback {
     Callback(EventCallback<E, Derived> callback) : callback(callback) { }
     EventCallback<E, Derived> callback;
   };
@@ -45,16 +45,30 @@ namespace uvcpp {
   class Resource : public std::enable_shared_from_this<Resource<T, Derived>> {
     enum class CallbackType {
       ALWAYS,
-      ONCE
+      ONCE,
+      ONCE_SINGLE
     };
 
-    public:
-      using Type = T;
+    protected:
       explicit Resource(const std::shared_ptr<Loop> &loop) : loop_(loop) {
         resource_.data = this;
       }
+
+      void reportError(const std::string &funName, int err) {
+        publish<EvError>(EvError{ err });
+      }
+
+    public:
+      using Type = T;
+
       virtual ~Resource() {
         publish(EvDestroy{});
+      }
+
+      template <typename U = Derived, typename ...Args, typename =
+        std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
+      static auto create(const std::shared_ptr<Loop> &loop, Args &&...args) {
+        return std::shared_ptr<U>(new U(loop, std::forward<Args>(args)...));
       }
 
       T *get() {
@@ -66,14 +80,21 @@ namespace uvcpp {
       }
 
       using std::enable_shared_from_this<Resource<T, Derived>>::shared_from_this;
-      // only call this method on std::shread_ptr
-      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
-      void sharedRefUntil() {
-        registerCallback<E, CallbackType::ONCE>(
-          [_ = shared_from_this()](const auto &, auto &){});
+
+      template<typename E, typename =
+        std::enable_if_t<std::is_base_of<Event, E>::value, E>>
+      void selfRefUntil() {
+        auto index = getEventTypeIndex<E, CallbackType::ONCE>();
+        if (index >= selfRefs.size()) {
+          selfRefs.resize(index + 1);
+        }
+        if (!selfRefs[index]) {
+          selfRefs[index] = shared_from_this();
+        }
       }
 
-      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
+      template<typename E, typename =
+        std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void on(EventCallback<E, Derived> &&callback) {
         const auto cbType =
           (std::is_same<E, EvError>::value ||
@@ -86,13 +107,15 @@ namespace uvcpp {
           std::forward<EventCallback<E, Derived>>(callback));
       }
 
-      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
+      template<typename E, typename =
+        std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void once(EventCallback<E, Derived> &&callback) {
         registerCallback<E, CallbackType::ONCE>(
           std::forward<EventCallback<E, Derived>>(callback));
       }
 
-      template<typename E, typename = std::enable_if_t<std::is_base_of<Event, E>::value, E>>
+      template<typename E, typename =
+        std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void publish(E &&event) {
         if (!std::is_same<E, EvError>::value &&
             !std::is_same<E, EvRef>::value &&
@@ -100,23 +123,11 @@ namespace uvcpp {
           doCallback<E, CallbackType::ALWAYS>(std::forward<E>(event));
         }
         doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
-      }
 
-      template <typename U = Derived, typename ...Args, typename =
-        std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
-      static auto createUnique(const std::shared_ptr<Loop> &loop, Args ...args) {
-        return std::make_unique<U>(loop, std::forward<Args>(args)...);
-      }
-
-      template <typename U = Derived, typename ...Args, typename =
-        std::enable_if_t<std::is_base_of<Derived, U>::value, U>>
-      static auto createShared(const std::shared_ptr<Loop> &loop, Args ...args) {
-        return std::make_shared<U>(loop, std::forward<Args>(args)...);
-      }
-
-    protected:
-      void reportError(const char *funName, int err) {
-        publish<EvError>(EvError{ err });
+        auto selfRefIndex = getEventTypeIndex<E, CallbackType::ONCE>();
+        if (selfRefIndex < selfRefs.size()) {
+          selfRefs[selfRefIndex].reset();
+        }
       }
 
     private:
@@ -140,16 +151,16 @@ namespace uvcpp {
           if (index < callbacks_.size()) {
             auto &tmp = callbacks_[index];
             for (auto &c : tmp) {
-              static_cast<Callback<E, Derived> *>(c.get())
-                ->callback(std::forward<E>(event), static_cast<Derived &>(*this));
+              static_cast<Callback<E, Derived> *>(c.get())->callback(
+                std::forward<E>(event), static_cast<Derived &>(*this));
             }
           }
         } else if (index < onceCallbacks_.size()) {
-          std::vector<std::unique_ptr<CallbackInterface>> tmp;
+          std::vector<std::unique_ptr<ICallback>> tmp;
           onceCallbacks_[index].swap(tmp);
           for (auto &c : tmp) {
-            static_cast<Callback<E, Derived> *>(c.get())
-              ->callback(std::forward<E>(event), static_cast<Derived &>(*this));
+            static_cast<Callback<E, Derived> *>(c.get())->callback(
+              std::forward<E>(event), static_cast<Derived &>(*this));
           }
         }
       }
@@ -169,8 +180,9 @@ namespace uvcpp {
     private:
       std::shared_ptr<Loop> loop_;
       T resource_;
-      std::vector<std::vector<std::unique_ptr<CallbackInterface>>> callbacks_{};
-      std::vector<std::vector<std::unique_ptr<CallbackInterface>>> onceCallbacks_{};
+      std::vector<std::vector<std::unique_ptr<ICallback>>> callbacks_;
+      std::vector<std::vector<std::unique_ptr<ICallback>>> onceCallbacks_;
+      std::vector<std::shared_ptr<Resource<T, Derived>>> selfRefs;
   };
 } /* end of namspace: uvcpp */
 
