@@ -23,8 +23,8 @@ include(ExternalProject)
 ExternalProject_Add(libuv
   GIT_REPOSITORY "https://github.com/libuv/libuv.git"
   #GIT_REPOSITORY "$ENV{HOME}/dev/github/libuv"
-  GIT_TAG "v1.x"
-  #GIT_TAG "v1.22.0"
+  #GIT_TAG "v1.x"
+  GIT_TAG "v1.33.1"
   CONFIGURE_COMMAND ${CONFIGURE_COMMMAND}
   BUILD_IN_SOURCE 1
   BUILD_COMMAND $(MAKE)
