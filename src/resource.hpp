@@ -85,11 +85,11 @@ namespace uvcpp {
         std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void selfRefUntil() {
         auto index = getEventTypeIndex<E, CallbackType::ONCE>();
-        if (index >= selfRefs.size()) {
-          selfRefs.resize(index + 1);
+        if (index >= selfRefs_.size()) {
+          selfRefs_.resize(index + 1);
         }
-        if (!selfRefs[index]) {
-          selfRefs[index] = shared_from_this();
+        if (!selfRefs_[index]) {
+          selfRefs_[index] = shared_from_this();
         }
       }
 
@@ -125,8 +125,8 @@ namespace uvcpp {
         doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
 
         auto selfRefIndex = getEventTypeIndex<E, CallbackType::ONCE>();
-        if (selfRefIndex < selfRefs.size()) {
-          selfRefs[selfRefIndex].reset();
+        if (selfRefIndex < selfRefs_.size()) {
+          selfRefs_[selfRefIndex].reset();
         }
       }
 
@@ -182,7 +182,7 @@ namespace uvcpp {
       T resource_;
       std::vector<std::vector<std::unique_ptr<ICallback>>> callbacks_;
       std::vector<std::vector<std::unique_ptr<ICallback>>> onceCallbacks_;
-      std::vector<std::shared_ptr<Resource<T, Derived>>> selfRefs;
+      std::vector<std::shared_ptr<Resource<T, Derived>>> selfRefs_;
   };
 } /* end of namspace: uvcpp */
 
