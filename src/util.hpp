@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include "defs.h"
-#include "nul/log.hpp"
+#include "nul/log.h"
 
 namespace {
   static const auto CPointerDeleter = [](void *p) { free(p); };

@@ -13,7 +13,7 @@
 #include <vector>
 #include "uv.h"
 #include "loop.hpp"
-#include "nul/log.hpp"
+#include "nul/log.h"
 
 namespace uvcpp {
 
