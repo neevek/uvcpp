@@ -15,6 +15,7 @@
 #include "timer.hpp"
 #include "prepare.hpp"
 #include "poll.hpp"
+#include "fs_event.hpp"
 #include "ext/poll_unix_sock.hpp"
 
 #endif /* end of include guard: UVCPP_H_ */

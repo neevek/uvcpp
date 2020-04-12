@@ -52,7 +52,7 @@ SET_LIBRARY_PROP(uv uvcpp "${UV_LIBRARY_DIR}/libuv.a")
 ExternalProject_Add(gtest
   PREFIX "${CMAKE_BINARY_DIR}/deps"
   GIT_REPOSITORY "https://github.com/google/googletest.git"
-  GIT_TAG "master"
+  GIT_TAG "release-1.8.1"
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/deps/installed
   GIT_SHALLOW 1
   GIT_PROGRESS 1
@@ -89,6 +89,7 @@ ADD_UVCPP_TEST(timer uvcpp/timer.cc)
 ADD_UVCPP_TEST(prepare uvcpp/prepare.cc)
 ADD_UVCPP_TEST(work uvcpp/work.cc)
 ADD_UVCPP_TEST(poll uvcpp/poll.cc)
+ADD_UVCPP_TEST(fs_event uvcpp/fs_event.cc)
 
 # build a executable without gtest, so we can debug the code
 #add_executable(testpipe uvcpp/testpipe.cc)
