@@ -50,13 +50,11 @@ namespace uvcpp {
 
       template<typename E>
       void on(EventCallback<E, Derived> &&callback) {
-        if (std::is_same<E, EvClose>::value) {
-          Resource<T, Derived>::template once<E>(
-            std::forward<EventCallback<E, Derived>>(callback));
-        } else {
-          Resource<T, Derived>::template on<E>(
-            std::forward<EventCallback<E, Derived>>(callback));
-        }
+        static_assert(!std::is_same<E, EvClose>::value,
+                      "EvClose is not allowed to be registered with 'on'");
+
+        Resource<T, Derived>::template on<E>(
+          std::forward<EventCallback<E, Derived>>(callback));
       }
 
     private:

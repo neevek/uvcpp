@@ -9,10 +9,10 @@ TEST(Prepare, LoopCount) {
 
   auto prepare = Prepare::create(loop);
 
-  prepare->on<EvError>([](const auto &e, auto &prepare) {
+  prepare->once<EvError>([](const auto &e, auto &prepare) {
     FAIL() << "prepare failed with status: " << e.status;
   });
-  prepare->on<EvClose>([](const auto &e, auto &prepare) {
+  prepare->once<EvClose>([](const auto &e, auto &prepare) {
     LOG_D("prepare closed");
   });
 

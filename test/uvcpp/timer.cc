@@ -54,7 +54,7 @@ TEST(Timer, RepeatShared) {
     // though 'on<>' instead of 'once<>' is used, when it is called,
     // the callback itself gets deleted, so the Timer object will be released,
     // and EvDestroy event will be fired
-    timer->on<EvClose>([sharedTimer = timer](const auto &e, auto &timer) {
+    timer->once<EvClose>([sharedTimer = timer](const auto &e, auto &timer) {
       LOG_D("timer closed: %li", sharedTimer.use_count());
     });
     timer->once<EvDestroy>([&destroyed, t = &timer](const auto &e, auto &timer) {
@@ -62,8 +62,7 @@ TEST(Timer, RepeatShared) {
       destroyed = true;
     });
 
-    auto count = 0;
-    timer->on<EvTimer>([&count, t = &timer](const auto &e, auto &timer) {
+    timer->on<EvTimer>([t = &timer](const auto &e, auto &timer) {
       LOG_D("timer event: %li", t->use_count());
       timer.stop();
       timer.close();

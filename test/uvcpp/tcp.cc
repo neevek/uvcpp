@@ -36,13 +36,13 @@ TEST(Tcp, Connection) {
       ++destroyCount;
     });
 
-    server->on<EvError>([](const auto &e, auto &tcp) {
+    server->once<EvError>([](const auto &e, auto &tcp) {
       FAIL() << "server failed with status: " << e.status;
     });
-    client->on<EvError>([](const auto &e, auto &tcp) {
+    client->once<EvError>([](const auto &e, auto &tcp) {
       FAIL() << "client failed with status: " << e.status;
     });
-    client->on<EvClose>([](const auto &e, auto &handle) {
+    client->once<EvClose>([](const auto &e, auto &handle) {
       LOG_D("client closed: isValid=%d", handle.isValid());
     });
 
@@ -137,7 +137,7 @@ TEST(Tcp, ImmediateClose) {
   ASSERT_TRUE(!!server);
   ASSERT_TRUE(!!client);
 
-  client->on<EvError>([&](const auto &e, auto &client){
+  client->once<EvError>([&](const auto &e, auto &client){
     LOG_E("error: %s", e.message.c_str());
     client.close();
     server->close();

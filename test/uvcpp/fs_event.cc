@@ -14,10 +14,10 @@ TEST(FsEvent, TestFileChange) {
     auto fsEvent = FsEvent::create(loop);
     ASSERT_TRUE(!!fsEvent);
 
-    fsEvent->on<EvError>([](const auto &e, auto &fsEvent) {
+    fsEvent->once<EvError>([](const auto &e, auto &fsEvent) {
       FAIL() << "fsEvent failed with status: " << e.status << ", msg: " << e.message;
     });
-    fsEvent->on<EvClose>([fe = fsEvent](const auto &e, auto &fsEvent) {
+    fsEvent->once<EvClose>([fe = fsEvent](const auto &e, auto &fsEvent) {
       LOG_D("fsEvent closed: %li", fe.use_count());
     });
     fsEvent->once<EvDestroy>([&destroyed, fe = &fsEvent](const auto &e, auto &fsEvent) {

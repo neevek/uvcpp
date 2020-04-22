@@ -84,26 +84,17 @@ namespace uvcpp {
       template<typename E, typename =
         std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void selfRefUntil() {
-        auto index = getEventTypeIndex<E, CallbackType::ONCE>();
-        if (index >= selfRefs_.size()) {
-          selfRefs_.resize(index + 1);
-        }
-        if (!selfRefs_[index]) {
-          selfRefs_[index] = shared_from_this();
-        }
+        once<E>([_ = shared_from_this()](const auto &e, auto &h){});
       }
 
       template<typename E, typename =
         std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void on(EventCallback<E, Derived> &&callback) {
-        const auto cbType =
-          (std::is_same<E, EvError>::value ||
-           std::is_same<E, EvRef>::value ||
-           std::is_same<E, EvDestroy>::value) ?
-          CallbackType::ONCE :
-          CallbackType::ALWAYS;
+        static_assert(
+          !std::is_same<E, EvRef>::value && !std::is_same<E, EvDestroy>::value,
+          "EvRef/EvDestroy is not allowed to be registered with 'on'");
 
-        registerCallback<E, cbType>(
+        registerCallback<E, CallbackType::ALWAYS>(
           std::forward<EventCallback<E, Derived>>(callback));
       }
 
@@ -117,17 +108,11 @@ namespace uvcpp {
       template<typename E, typename =
         std::enable_if_t<std::is_base_of<Event, E>::value, E>>
       void publish(E &&event) {
-        if (!std::is_same<E, EvError>::value &&
-            !std::is_same<E, EvRef>::value &&
+        if (!std::is_same<E, EvRef>::value &&
             !std::is_same<E, EvDestroy>::value) {
           doCallback<E, CallbackType::ALWAYS>(std::forward<E>(event));
         }
         doCallback<E, CallbackType::ONCE>(std::forward<E>(event));
-
-        auto selfRefIndex = getEventTypeIndex<E, CallbackType::ONCE>();
-        if (selfRefIndex < selfRefs_.size()) {
-          selfRefs_[selfRefIndex].reset();
-        }
       }
 
     private:
@@ -182,7 +167,6 @@ namespace uvcpp {
       T resource_;
       std::vector<std::vector<std::unique_ptr<ICallback>>> callbacks_;
       std::vector<std::vector<std::unique_ptr<ICallback>>> onceCallbacks_;
-      std::vector<std::shared_ptr<Resource<T, Derived>>> selfRefs_;
   };
 } /* end of namspace: uvcpp */
 

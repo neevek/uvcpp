@@ -9,7 +9,7 @@ TEST(Req, DNSRequestResolveLocalHost) {
 
   auto req = DNSRequest::create(loop);
   req->selfRefUntil<EvDNSRequestFinish>();
-  req->on<EvError>([](const auto &e, auto &r) {
+  req->once<EvError>([](const auto &e, auto &r) {
     FAIL() << "failed with status: " << e.status;
   });
 
@@ -31,7 +31,7 @@ TEST(Req, DNSRequest0000) {
 
   auto req = DNSRequest::create(loop);
   req->selfRefUntil<EvDNSRequestFinish>();
-  req->on<EvError>([](const auto &e, auto &r) {
+  req->once<EvError>([](const auto &e, auto &r) {
     FAIL() << "failed with status: " << e.status;
   });
 
