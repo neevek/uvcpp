@@ -39,8 +39,13 @@ namespace uvcpp {
       }
 
       void close() {
-        if (!uv_is_closing(reinterpret_cast<uv_handle_t *>(this->get()))) {
-          uv_close((uv_handle_t *)this->get(), closeCallback);
+        auto handle = reinterpret_cast<uv_handle_t *>(this->get());
+        if (uv_handle_get_type(handle) == UV_UNKNOWN_HANDLE) {
+          LOG_W("handle not initialized");
+          return;
+        }
+        if (!uv_is_closing(handle)) {
+          uv_close(handle, closeCallback);
         }
       }
 
