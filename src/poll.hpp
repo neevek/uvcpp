@@ -86,7 +86,7 @@ namespace uvcpp {
       static void onPollCallback(uv_poll_t *handle, int status, int events) {
         auto poll = reinterpret_cast<Poll *>(handle->data);
         if (status < 0) {
-          poll->reportError("send", status);
+          poll->reportError("poll", status);
 
         } else {
           poll->template publish<EvPoll>(EvPoll{ events });
